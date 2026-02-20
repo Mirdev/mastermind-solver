@@ -53,6 +53,8 @@ class HeuristicSolver:
 
         if self.engine.allow_duplicates == True and turns == 1:
             return (1, 2, 3, 4)
+        if self.engine.allow_duplicates == True and turns == 2:
+            return (5, 6, 7, 8)
 
         else:
             # 위치별 숫자의 빈도 측정
