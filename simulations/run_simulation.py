@@ -31,22 +31,22 @@ def run_all_benchmarks():
         {
             "desc": "표준 규칙 (중복X, 0시작X)",
             "config": {"digits": 4, "allow_duplicates": False, "allow_leading_zero": False},
-            "iters": 1000
+            "iters": 100
         },
         {
             "desc": "확장 규칙 (중복X, 0시작O)",
             "config": {"digits": 4, "allow_duplicates": False, "allow_leading_zero": True},
-            "iters": 1000
+            "iters": 100
         },
         {
             "desc": "중복 규칙 (중복O, 0시작X)",
             "config": {"digits": 4, "allow_duplicates": True, "allow_leading_zero": False},
-            "iters": 1000  # 중복 허용 시 연산량이 늘어나므로 횟수 조정
+            "iters": 100  # 중복 허용 시 연산량이 늘어나므로 횟수 조정
         },
         {
             "desc": "하드코어 규칙 (중복O, 0시작O)",
             "config": {"digits": 4, "allow_duplicates": True, "allow_leading_zero": True},
-            "iters": 1000  # 중복 허용 시 연산량이 늘어나므로 횟수 조정
+            "iters": 100  # 중복 허용 시 연산량이 늘어나므로 횟수 조정
         }
     ]
 

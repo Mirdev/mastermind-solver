@@ -1,4 +1,5 @@
 import math
+import random
 from collections import Counter
 from itertools import permutations, product
 
@@ -7,25 +8,39 @@ class EntropySolver:
     Shannon Entropy 기반 솔버.
     각 추측이 후보군을 얼마나 줄여줄 수 있는지(기대 정보량)를 계산하여 최적의 수를 선택함.
     """
+    # [핵심] 모든 인스턴스가 공유하는 클래스 레벨 캐시
+    _candidates_cache = {}
+    
     def __init__(self, engine):
         self.engine = engine
         self.digits = engine.digits
+        base_digits = '0123456789'
+        if not self.engine.allow_leading_zero:
+            self.start_digits = base_digits[1:] + base_digits[0]
+        else:
+            self.start_digits = base_digits
+        # 생성 시점에 캐시를 확인하여 후보군 할당
         self.candidates = self._generate_all_candidates()
 
     def _generate_all_candidates(self):
-        # 엔진의 allow_duplicates 설정에 따라 생성 방식 결정
+        # 자릿수, 중복여부, 0시작여부를 조합한 고유 키 생성
+        cache_key = (self.engine.digits, self.engine.allow_duplicates, self.engine.allow_leading_zero)
+        
+        # [데이터 체크]
+        if cache_key in EntropySolver._candidates_cache:
+            return EntropySolver._candidates_cache[cache_key][:]
+
         if self.engine.allow_duplicates:
-            # 중복 허용: 0000 ~ 9999 (10^4개)
             all_cands = list(product(range(10), repeat=self.engine.digits))
         else:
-            # 중복 비허용: nPr (10P4 = 5040개)
             all_cands = list(permutations(range(10), self.engine.digits))
-    
-        # 엔진의 allow_leading_zero 설정에 따라 필터링
+
         if not self.engine.allow_leading_zero:
             all_cands = [c for c in all_cands if c[0] != 0]
-            
-        return all_cands
+        
+        # [저장]
+        EntropySolver._candidates_cache[cache_key] = all_cands
+        return all_cands[:]
 
     def update_candidates(self, guess, feedback):
         self.candidates = [
@@ -41,43 +56,44 @@ class EntropySolver:
         """
         # 하드코딩된 초반 전략 (성능 최적화를 위한 의도적 설계)
         if turn == 1:
-            return (0, 1, 2, 3)
-        
-        if len(self.candidates) > 500:  # 후보가 너무 많을 때의 임시 전략
-            return self.candidates[0]
-
-        best_guess = None
-        max_entropy = -1
-
-        for guess in self.candidates:
-            # 각 피드백 결과의 분포 확인
-            counts = Counter()
-            for cand in self.candidates:
-                feedback = self.engine.get_feedback(cand, guess)
-                counts[feedback] += 1
+            res = self.start_digits[:4]
+        elif turn == 2:
+            res = self.start_digits[4:8]
+        else:
+            # sampling code
+            if len(self.candidates) > 500:
+                return self.candidates[0]
+    
+            best_guess = None
+            max_entropy = -1
+    
+            for guess in self.candidates:
+                # 각 피드백 결과의 분포 확인
+                counts = {}
+                for cand in self.candidates:
+                    feedback = self.engine.get_feedback(cand, guess)
+                    counts[feedback] = counts.get(feedback, 0) + 1
+                
+                # 섀넌 엔트로피 계산: H(X) = -Σ P(x) log2 P(x)
+                entropy = 0
+                total = len(self.candidates)
+                for count in counts.values():
+                    p = count / total
+                    entropy -= p * math.log2(p)
+                
+                if entropy > max_entropy:
+                    max_entropy = entropy
+                    best_guess = guess
             
-            # 섀넌 엔트로피 계산: H(X) = -Σ P(x) log2 P(x)
-            entropy = 0
-            total = len(self.candidates)
-            for count in counts.values():
-                p = count / total
-                entropy -= p * math.log2(p)
-            
-            if entropy > max_entropy:
-                max_entropy = entropy
-                best_guess = guess
-        
-        return best_guess
+            return best_guess
+        return tuple(int(d) for d in res)
         
     def solve(self, secret):
         turns = 0
         while True:
             turns += 1
-            # 엔트로피 솔버는 turns가 필요하므로 가변 인자로 처리하거나 내부에서 판단
-            if hasattr(self, 'get_best_guess') and self.__class__.__name__ == 'EntropySolver':
-                guess = self.get_best_guess(turns)
-            else:
-                guess = self.get_best_guess()
+            
+            guess = self.get_best_guess(turns)
                 
             feedback = self.engine.get_feedback(secret, guess)
             
