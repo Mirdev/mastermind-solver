@@ -10,8 +10,9 @@ class HeuristicSolver:
     # [핵심] 모든 인스턴스가 공유하는 클래스 레벨 캐시
     _candidates_cache = {}
     
-    def __init__(self, engine):
+    def __init__(self, engine, observer_callback=None):
         self.engine = engine
+        self.observer_callback = observer_callback
         self.digits = engine.digits
         # 생성 시점에 캐시를 확인하여 후보군 할당
         self.candidates = self._generate_all_candidates()
@@ -44,18 +45,41 @@ class HeuristicSolver:
             if self.engine.get_feedback(c, guess) == feedback
         ]
 
-    def get_best_guess(self, turns):
+    def _extract_dashboard_data(self, turn, best_guess, evaluation_list):
+        """대시보드용 공용 데이터 구조 생성"""
+        # 1번 대시보드용 확률 행렬 계산
+        total = len(self.candidates)
+        probs = [[0.0]*10 for _ in range(self.digits)]
+        for cand in self.candidates:
+            for i, digit in enumerate(cand):
+                probs[i][digit] += 1 / total
+        
+        return {
+            "turn": turn,
+            "solver_name": "HeuristicSolver",
+            "best_guess": list(best_guess),
+            "dashboard_1_heatmap": {"probabilities": probs},
+            "dashboard_2_trend": {"remaining_count": total},
+            "dashboard_3_evaluation": {
+                "metric_name": "Positional Frequency Score(NB)",
+		# 빈 리스트가 넘어오더라도 에러가 나지 않도록 처리
+                "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list[:5]]
+            }
+        }
+
+    def get_best_guess(self, turn):
         """
         위치별 빈도 가중치 합산(Positional Weight Sum) 로직
         """
+        eval_list = []
+        best_guess = None
+
         if len(self.candidates) == 1:
-            return self.candidates[0]
-
-        if self.engine.allow_duplicates == True and turns == 1:
-            return (1, 2, 3, 4)
-        if self.engine.allow_duplicates == True and turns == 2:
-            return (5, 6, 7, 8)
-
+            best_guess = self.candidates[0]
+        elif self.engine.allow_duplicates == True and turn == 1:
+            best_guess = (1, 2, 3, 4)
+        elif self.engine.allow_duplicates == True and turn == 2:
+            best_guess = (5, 6, 7, 8)
         else:
             # 위치별 숫자의 빈도 측정
             position_counts = [{} for _ in range(self.engine.digits)]
@@ -63,17 +87,19 @@ class HeuristicSolver:
                 for i, digit in enumerate(cand):
                     position_counts[i][digit] = position_counts[i].get(digit, 0) + 1
     
-            best_guess = None
-            max_score = -1
-    
             for cand in self.candidates:
                 # 확률의 곱(Bayesian) 대신 빈도의 합(Heuristic)을 선택하여 성능 최적화
                 score = sum(position_counts[i][val] for i, val in enumerate(cand))
-                if score > max_score:
-                    max_score = score
-                    best_guess = cand
+                eval_list.append((cand, score))
+
+            eval_list.sort(key=lambda x: x[1], reverse=True)
+            best_guess = eval_list[0][0]
+
+        if self.observer_callback:
+            payload = self._extract_dashboard_data(turn, best_guess, eval_list)
+            self.observer_callback(payload)
     
-            return best_guess
+        return best_guess
         
     def solve(self, secret):
         turns = 0

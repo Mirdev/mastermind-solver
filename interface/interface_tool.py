@@ -1,6 +1,7 @@
 import sys
 import os
 import time
+import argparse
 
 # 경로 주입
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -11,13 +12,14 @@ if root_dir not in sys.path:
 from src.game_engine import MastermindEngine
 from src.solvers.entropy_solver import EntropySolver
 from src.solvers.heuristic_solver import HeuristicSolver
+from interface.cli_dashboard import CLIDashboard  # 대시보드 모듈 추가됨
 
 # --- [정석: 함수를 밖으로 분리] ---
 
 def do_attack(solver, turn, digits):
     """AI가 공격하고 사용자의 피드백을 받는 함수"""
     start_time = time.time()
-    # 모든 솔버가 turn 인자를 받는다고 가정 (사용자 피드백 반영)
+    # 모든 솔버가 turn 인자를 받는다고 가정
     guess = solver.get_best_guess(turn)
     print(f"▶ AI 추천 공격: **{guess}** (계산: {time.time() - start_time:.4f}s)")
     
@@ -51,10 +53,15 @@ def do_defense(engine, my_secret, digits, turn):
         print(f"   [!] {digits}자리 숫자를 입력해 주세요.")
     return False
 
-def run_calculator():
+def run_calculator(use_dashboard=False):
     print("==========================================")
     print("   ⚾ Mastermind Baseball Console ⚾    ")
     print("==========================================")
+
+    # 대시보드 객체 초기화
+    dashboard = CLIDashboard() if use_dashboard else None
+    if use_dashboard:
+        print("[System] 대시보드 및 로그 기록 모드가 활성화되었습니다.\n")
 
     # 설정부 (자릿수, 중복여부 등)
     try:
@@ -66,13 +73,23 @@ def run_calculator():
         digits, allow_dup, allow_zero, solver_choice = 4, False, False, "1"
 
     engine = MastermindEngine(digits=digits, allow_duplicates=allow_dup, allow_leading_zero=allow_zero)
-    solver = HeuristicSolver(engine) if solver_choice == "2" else EntropySolver(engine)
 
-    my_secret_str = input(f"\n상대방이 맞춰야 할 '당신의 숫자'를 입력하세요: ")
-    my_secret = tuple(int(d) for d in my_secret_str)
+    # 솔버 생성 시 대시보드 콜백 전달
+    callback = dashboard.receive_data if dashboard else None
+    if solver_choice == "2":
+        solver = HeuristicSolver(engine, observer_callback=callback)
+    else:
+        solver = EntropySolver(engine, observer_callback=callback)
+
+    while True:
+        my_secret_str = input(f"\n상대방이 맞춰야 할 '당신의 숫자'({digits}자리)를 입력하세요: ").replace(" ", "")
+        if len(my_secret_str) == digits and my_secret_str.isdigit():
+            my_secret = tuple(int(d) for d in my_secret_str)
+            break
+        print(f"   [!] {digits}자리의 숫자로만 입력해주세요.")
     is_atk_first = input("당신이 먼저 공격하시겠습니까? (y/n): ").lower() == 'y'
 
-    # ⚾ 9회 제한 루프
+    # 9회 제한 루프
     for turn in range(1, 10):
         print(f"\n--- [{turn}회] 남은 후보군: {len(solver.candidates)} ---")
 
@@ -92,4 +109,9 @@ def run_calculator():
     print(f"\n💀 [GAME OVER] 9회가 종료되었습니다!")
 
 if __name__ == "__main__":
-    run_calculator()
+    # argparse를 통한 명령줄 인자 파싱 처리
+    parser = argparse.ArgumentParser(description="Mastermind Interactive Calculator")
+    parser.add_argument('-d', '--dashboard', action='store_true', help="대시보드 모드를 활성화합니다.")
+    args = parser.parse_args()
+    
+    run_calculator(use_dashboard=args.dashboard)

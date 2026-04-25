@@ -11,8 +11,9 @@ class EntropySolver:
     # [핵심] 모든 인스턴스가 공유하는 클래스 레벨 캐시
     _candidates_cache = {}
     
-    def __init__(self, engine):
+    def __init__(self, engine, observer_callback=None):
         self.engine = engine
+        self.observer_callback = observer_callback
         self.digits = engine.digits
         base_digits = '0123456789'
         if not self.engine.allow_leading_zero:
@@ -48,45 +49,95 @@ class EntropySolver:
             if self.engine.get_feedback(c, guess) == feedback
         ]
 
+    def _extract_dashboard_data(self, turn, best_guess, evaluation_list):
+        """대시보드용 공용 데이터 구조 생성"""
+        # 1번 대시보드용 확률 행렬 계산
+        total = len(self.candidates)
+        probs = [[0.0]*10 for _ in range(self.digits)]
+        for cand in self.candidates:
+            for i, digit in enumerate(cand):
+                probs[i][digit] += 1 / total
+
+        # [Dash 4] 1등 숫자(최고의 수)를 찔렀을 때의 쪼개짐
+        expected_splits = {}
+        if best_guess:
+            for cand in self.candidates:
+                fb = self.engine.get_feedback(cand, best_guess)
+                expected_splits[fb] = expected_splits.get(fb, 0) + 1
+        sorted_splits = sorted(expected_splits.items(), key=lambda x: x[1], reverse=True)
+        
+        # [신설] 꼴등 숫자(최악의 수)를 찔렀을 때의 쪼개짐 (비교용)
+        worst_splits = []
+        worst_guess = None
+        if evaluation_list and len(evaluation_list) > 1:
+            worst_guess = evaluation_list[-1][0] # 엔트로피 점수 꼴등
+            w_splits_dict = {}
+            for cand in self.candidates:
+                fb = self.engine.get_feedback(cand, worst_guess)
+                w_splits_dict[fb] = w_splits_dict.get(fb, 0) + 1
+            worst_splits = sorted(w_splits_dict.items(), key=lambda x: x[1], reverse=True)
+        
+        return {
+            "turn": turn,
+            "solver_name": "EntropySolver",
+            "best_guess": list(best_guess) if best_guess else [],
+            "dashboard_1_heatmap": {"probabilities": probs},
+            "dashboard_2_trend": {"remaining_count": total},
+            "dashboard_3_evaluation": {
+                "metric_name": "Shannon Entropy (bits)",
+                "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list[:5]],
+                "expected_splits": sorted_splits,
+                "worst_split_comparison": { # 비교 데이터 전송
+                    "guess": list(worst_guess) if worst_guess else [],
+                    "splits": worst_splits
+                }
+            }
+        }
+
     def get_best_guess(self, turn):
         """
         [Engineering Note]
         초반(1~2턴)에는 전체 후보군에 대한 엔트로피 계산량이 지수적으로 많으므로,
         실시간 응답성을 위해 미리 계산된 최적의 수(Heuristic Seed)를 사용함.
         """
+        eval_list = []
+        best_guess = None
+
         # 하드코딩된 초반 전략 (성능 최적화를 위한 의도적 설계)
         if turn == 1:
-            res = self.start_digits[:4]
+            best_guess = tuple(int(d) for d in self.start_digits[:4])
         elif turn == 2:
-            res = self.start_digits[4:8]
+            best_guess = tuple(int(d) for d in self.start_digits[4:8])
         else:
             # sampling code
             if len(self.candidates) > 500:
-                return self.candidates[0]
-    
-            best_guess = None
-            max_entropy = -1
-    
-            for guess in self.candidates:
-                # 각 피드백 결과의 분포 확인
-                counts = {}
-                for cand in self.candidates:
-                    feedback = self.engine.get_feedback(cand, guess)
-                    counts[feedback] = counts.get(feedback, 0) + 1
+                best_guess = self.candidates[0]
+            else:
+                for guess in self.candidates:
+                    # 각 피드백 결과의 분포 확인
+                    counts = {}
+                    for cand in self.candidates:
+                        feedback = self.engine.get_feedback(cand, guess)
+                        counts[feedback] = counts.get(feedback, 0) + 1
                 
-                # 섀넌 엔트로피 계산: H(X) = -Σ P(x) log2 P(x)
-                entropy = 0
-                total = len(self.candidates)
-                for count in counts.values():
-                    p = count / total
-                    entropy -= p * math.log2(p)
-                
-                if entropy > max_entropy:
-                    max_entropy = entropy
-                    best_guess = guess
+                    # 섀넌 엔트로피 계산: H(X) = -Σ P(x) log2 P(x)
+                    entropy = 0
+                    total = len(self.candidates)
+                    for count in counts.values():
+                        p = count / total
+                        entropy -= p * math.log2(p)
+
+                    eval_list.append((guess, entropy))
+
+                eval_list.sort(key=lambda x: x[1], reverse=True)
+                best_guess = eval_list[0][0]
+
+	# 데이터 발송
+        if self.observer_callback:
+            payload = self._extract_dashboard_data(turn, best_guess, eval_list)
+            self.observer_callback(payload)
             
-            return best_guess
-        return tuple(int(d) for d in res)
+        return best_guess
         
     def solve(self, secret):
         turns = 0
