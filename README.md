@@ -223,8 +223,8 @@ python simulations/self_play.py
 ├── src/
 │   ├── game_engine/    # 핵심 게임 로직 및 피드백 엔진
 │   └── solvers/        # Entropy 및 Heuristic 알고리즘 구현체
-├── interface/          # CLI 및 GUI 기반 대시보드 렌더러 및 인터랙티브 툴(상대방과 사용 가능한 툴)
-├── simulations/        # 벤치마크 및 자가 대결 스크립트
+├── interface/          # CLI 및 GUI 기반 대시보드 렌더러 및 인터랙티브 툴(상대방과 대결시 사용 가능한 툴)
+├── simulations/        # 벤치마크 및 AI 자가 대결 스크립트
 ├── logs/               # JSONL 시뮬레이션 로그 기록 폴더
 └── README.md
 ```
