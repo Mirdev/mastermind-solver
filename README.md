@@ -2,9 +2,7 @@
 
 **Information Theory와 Naive Bayesian 접근법을 결합한 고성능 숫자 야구(Mastermind) 솔버입니다.**
 
-단순한 무차별 대입(Brute-force)이 아니라, 기대 정보량(Shannon Entropy, $$
-H(X) = -\sum p(x) \log_2 p(x)
-$$)을 극대화하고 빈도 분석(Heuristic)을 통해 최적의 해를 찾아냅니다. 9회 제한이 있는 실전 야구 게임 규칙에서도 압도적인 승률을 보장합니다.
+단순한 무차별 대입(Brute-force)이 아니라, 기대 정보량(Shannon Entropy, $$H(X) = -\sum p(x) \log_2 p(x)$$)을 극대화하고 빈도 분석(Heuristic)을 통해 최적의 해를 찾아냅니다. 9회 제한이 있는 실전 야구 게임 규칙에서도 압도적인 승률을 보장합니다.
 
 ---
 
