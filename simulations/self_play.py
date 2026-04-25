@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import random
+import argparse
 
 # [Path Hack] 프로젝트 루트 경로 주입
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -12,6 +13,7 @@ if root_dir not in sys.path:
 from src.game_engine import MastermindEngine
 from src.solvers.entropy_solver import EntropySolver
 from src.solvers.heuristic_solver import HeuristicSolver
+from interface.cli_dashboard import CLIDashboard  # 대시보드 모듈 추가됨
 
 def get_user_choice(prompt, default_val):
     choice = input(f"{prompt} (y: 예, n: 아니오, r: 랜덤, 기본 {default_val}): ").lower()
@@ -23,10 +25,15 @@ def get_user_choice(prompt, default_val):
         return False
     return default_val == 'y'
 
-def run_self_play():
+def run_self_play(use_dashboard=False):
     print("==========================================")
     print("   🤖 AI vs AI: Dynamic Validation 🤖    ")
     print("==========================================")
+
+    # 대시보드 객체 초기화
+    dashboard = CLIDashboard() if use_dashboard else None
+    if use_dashboard:
+        print("[System] 대시보드 및 로그 기록 모드가 활성화되었습니다.\n")
 
     # 1. 시뮬레이션 환경 동적 설정
     digits = 4
@@ -34,17 +41,18 @@ def run_self_play():
     allow_zero = get_user_choice("2) 리딩 제로 허용?", "n")
     
     print("\n[솔버 선택] 1: Entropy | 2: Heuristic | r: Random")
-    s_choice = input("선택 (기본 1): ").lower()
-    if s_choice == 'r':
-        s_choice = random.choice(["1", "2"])
+    solver_choice = input("선택 (기본 1): ").lower()
+    if solver_choice == 'r':
+        solver_choice = random.choice(["1", "2"])
     
     # 엔진 및 솔버 초기화
     engine = MastermindEngine(digits=digits, allow_duplicates=allow_dup, allow_leading_zero=allow_zero)
-    
-    if s_choice == "2":
-        solver = HeuristicSolver(engine)
+
+    callback = dashboard.receive_data if dashboard else None
+    if solver_choice == "2":
+        solver = HeuristicSolver(engine, observer_callback=callback)
     else:
-        solver = EntropySolver(engine)
+        solver = EntropySolver(engine, observer_callback=callback)
 
     # 2. 정답 생성 (설정된 규칙에 맞는 후보군 중 랜덤 선택)
     secret_str = random.choice(solver.candidates)
@@ -92,4 +100,9 @@ def run_self_play():
     print(f"\n⏱️ 전체 시뮬레이션 소요 시간: {time.time() - total_start:.2f}초")
 
 if __name__ == "__main__":
-    run_self_play()
+    # argparse를 통한 명령줄 인자 파싱 처리
+    parser = argparse.ArgumentParser(description="Mastermind Interactive Calculator")
+    parser.add_argument('-d', '--dashboard', action='store_true', help="대시보드 모드를 활성화합니다.")
+    args = parser.parse_args()
+    
+    run_self_play(use_dashboard=args.dashboard)
