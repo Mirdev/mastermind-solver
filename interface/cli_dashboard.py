@@ -1,5 +1,3 @@
-import json
-import os
 from datetime import datetime
 
 class CLIDashboard:
@@ -10,24 +8,12 @@ class CLIDashboard:
     - Dash 3: 상위 추천 목록
     - Dash 4: 솔버별 결정 근거 (Decision Tree vs Score Breakdown)
     """
-    def __init__(self, log_dir="logs"):
+    def __init__(self):
         self.history = []
-        self.log_dir = log_dir
-        if not os.path.exists(log_dir):
-            os.makedirs(log_dir)
-            
-        # 실행 시마다 고유한 파일명 생성 (예: log_20260425_090000.jsonl)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.log_file = os.path.join(log_dir, f"sim_log_{timestamp}.jsonl")
 
     def receive_data(self, payload):
         """솔버의 콜백을 통해 데이터를 수신하는 입구"""
-        # 트랙 1: 메모리에 저장 (실시간 분석용)
         self.history.append(payload)
-        
-        # 트랙 2: 파일(JSONL)에 영구 저장 (나중에 D3.js 연동용)
-        with open(self.log_file, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(payload, ensure_ascii=False) + '\n')
             
         # 도스 기반 실시간 렌더링
         self._render_console(payload)
