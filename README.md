@@ -34,7 +34,7 @@
 * **Historical Replay Engine**: 과거에 수행된 시뮬레이션 로그 목록을 사이드바에서 선택하여 턴별로 복기할 수 있는 VOD 기능을 제공합니다.
 * **Ghosting Zero UX**: `st.session_state` 기반의 Double Rerun 메커니즘을 적용하여, 라이브 모드 전환 시 이전 차트의 잔상이 남지 않는 깨끗한 화면 세척 로직을 구현했습니다.
 
-### 📊 4-Layer Analysis Report
+### 4-Layer Analysis Report
 1.  **Dash 1 (Heatmap)**: 자릿수별 숫자 출현 확률 분포를 10x4 매트릭스로 시각화. AI가 선택한 숫자는 강조 표시됩니다.
 2.  **Dash 2 (Trend)**: 턴이 경과함에 따라 정답 후보군이 얼마나 급격하게 소거되는지 선형 그래프로 추적합니다.
 3.  **Dash 3 (Evaluation)**: 현재 알고리즘(Entropy/Heuristic)이 평가한 공격 후보군 리스트와 각각의 점수를 표 형태로 제공합니다.
