@@ -26,6 +26,24 @@
 
 ---
 
+## Web-based Real-time Control Center (New)
+
+단순한 CLI를 넘어, Streamlit 기반의 실시간 관제 센터를 통해 AI의 추론 과정을 물리적으로 시각화합니다.
+
+* **Live Monitoring Mode**: `self-play.py` 실행 시 실시간으로 생성되는 JSONL 로그를 감시하여, AI가 현재 어떤 데이터를 기반으로 다음 수를 결정하는지 초단위로 렌더링합니다.
+* **Historical Replay Engine**: 과거에 수행된 시뮬레이션 로그 목록을 사이드바에서 선택하여 턴별로 복기할 수 있는 VOD 기능을 제공합니다.
+* **Ghosting Zero UX**: `st.session_state` 기반의 Double Rerun 메커니즘을 적용하여, 라이브 모드 전환 시 이전 차트의 잔상이 남지 않는 깨끗한 화면 세척 로직을 구현했습니다.
+
+### 📊 4-Layer Analysis Report
+1.  **Dash 1 (Heatmap)**: 자릿수별 숫자 출현 확률 분포를 10x4 매트릭스로 시각화. AI가 선택한 숫자는 강조 표시됩니다.
+2.  **Dash 2 (Trend)**: 턴이 경과함에 따라 정답 후보군이 얼마나 급격하게 소거되는지 선형 그래프로 추적합니다.
+3.  **Dash 3 (Evaluation)**: 현재 알고리즘(Entropy/Heuristic)이 평가한 공격 후보군 리스트와 각각의 점수를 표 형태로 제공합니다.
+4.  **Dash 4 (Rationale)**: 
+    * **Entropy**: Minimax 기반 스플릿 비교 (최악의 판정 시에도 남는 후보수 최소화 증명).
+    * **Heuristic**: 나이브 베이지안 빈도 가중치 합산 산식 노출.
+
+---
+
 ## Performance Benchmark (1000 Iterations)
 
 여러 규칙에 따른 솔버별 성능 지표입니다.
@@ -139,6 +157,11 @@
 
 ---
 
+## GUI Dashboard example
+<img width="1467" height="862" alt="1" src="https://github.com/user-attachments/assets/cf1b2e5a-1a0f-4b3e-a9ae-ff76474660e5" />
+
+---
+
 ## Engineering Note (Fine-tuning)
 
 실용적인 성능 향상을 위해 다음과 같은 로직을 반영하였습니다.
@@ -148,6 +171,14 @@
 3. **Strict Candidate Integrity**: 휴리스틱 연산 시 반드시 남은 후보군 내에서 최적해를 선택하도록 설계하여 논리적 모순 및 무한 루프를 방지합니다.
 4. **Input Validation Loop**: 인터랙티브 환경에서 사용자의 피드백 오류(S/B 합계 오류 등)를 실시간으로 검증합니다.
 5. **Data Decoupling**: 솔버의 핵심 연산 로직과 CLI 렌더링 로직을 완벽히 분리하여 연산 병목현상을 방지합니다.
+6. **State-aware UI Synchronization**: Streamlit의 단방향 렌더링 특성으로 인한 차트 잔상 문제를 해결하기 위해, `session_state`를 이용한 델타 모니터링 및 조건부 리셋 로직을 설계하여 UI 동기화 무결성을 확보했습니다.
+
+---
+
+## Installation
+git clone https://github.com/사용자명/mastermind-solver.git
+cd mastermind-solver
+pip install -r requirements.txt
 
 ---
 
@@ -168,6 +199,19 @@ python simulations/self_play.py [-d]
 ```bash
 python simulations/run_simulation.py
 ```
+### 4. Web Dashboard 실행 (실시간 관제)
+
+**1) 먼저 터미널 A에서 시뮬레이션 실행**
+
+```bash
+python simulations/self_play.py
+```
+
+**2) 터미널 B에서 웹 대시보드 가동**
+
+```bash
+streamlit run interface/web_dashboard.py
+```
 
 ---
 
@@ -177,7 +221,7 @@ python simulations/run_simulation.py
 ├── src/
 │   ├── game_engine/    # 핵심 게임 로직 및 피드백 엔진
 │   └── solvers/        # Entropy 및 Heuristic 알고리즘 구현체
-├── interface/          # CLI 기반 인터랙티브 툴 및 대시보드 렌더러
+├── interface/          # CLI 및 GUI 기반 대시보드 렌더러 및 인터랙티브 툴(상대방과 사용 가능한 툴)
 ├── simulations/        # 벤치마크 및 자가 대결 스크립트
 ├── logs/               # JSONL 시뮬레이션 로그 기록 폴더
 └── README.md
