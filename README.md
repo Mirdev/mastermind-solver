@@ -232,4 +232,4 @@ python simulations/self_play.py
 
 ## License
 
-This project is licensed under the **GNU GPL v3.0** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **GNU GPL v3.0** - see the [LICENSE](LICENSE.txt) file for details.
