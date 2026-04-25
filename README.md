@@ -229,3 +229,7 @@ python simulations/self_play.py
 ├── logs/               # JSONL 시뮬레이션 로그 기록 폴더
 └── README.md
 ```
+
+## License
+
+This project is licensed under the **GNU GPL v3.0** - see the [LICENSE](LICENSE) file for details.
