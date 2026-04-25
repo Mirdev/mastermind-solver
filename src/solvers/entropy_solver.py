@@ -2,6 +2,9 @@ import math
 import random
 from collections import Counter
 from itertools import permutations, product
+import json
+import os
+from datetime import datetime
 
 class EntropySolver:
     """
@@ -22,6 +25,15 @@ class EntropySolver:
             self.start_digits = base_digits
         # 생성 시점에 캐시를 확인하여 후보군 할당
         self.candidates = self._generate_all_candidates()
+
+        # 솔버가 생성될 때 딱 한 번 로그 파일을 준비합니다.
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(os.path.dirname(current_dir))
+        self.log_dir = os.path.join(project_root, "logs")
+        if not os.path.exists(self.log_dir):
+            os.makedirs(self.log_dir)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.log_file = os.path.join(self.log_dir, f"sim_log_{timestamp}.jsonl")
 
     def _generate_all_candidates(self):
         # 자릿수, 중복여부, 0시작여부를 조합한 고유 키 생성
@@ -77,7 +89,7 @@ class EntropySolver:
                 w_splits_dict[fb] = w_splits_dict.get(fb, 0) + 1
             worst_splits = sorted(w_splits_dict.items(), key=lambda x: x[1], reverse=True)
         
-        return {
+        payload = {
             "turn": turn,
             "solver_name": "EntropySolver",
             "best_guess": list(best_guess) if best_guess else [],
@@ -87,12 +99,18 @@ class EntropySolver:
                 "metric_name": "Shannon Entropy (bits)",
                 "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list[:5]],
                 "expected_splits": sorted_splits,
-                "worst_split_comparison": { # 비교 데이터 전송
+                "worst_split_comparison": { 
                     "guess": list(worst_guess) if worst_guess else [],
                     "splits": worst_splits
                 }
             }
         }
+        
+        # [핵심 고정] 페이로드가 만들어지는 즉시 파일에 강제 기록! (UI 존재 여부와 무관)
+        with open(self.log_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + '\n')
+            
+        return payload
 
     def get_best_guess(self, turn):
         """
@@ -132,9 +150,11 @@ class EntropySolver:
                 eval_list.sort(key=lambda x: x[1], reverse=True)
                 best_guess = eval_list[0][0]
 
-	# 데이터 발송
+    	# [핵심 고정] 조건문 밖으로 탈출: 무조건 페이로드를 생성하고 내부에서 로깅까지 완료!
+        payload = self._extract_dashboard_data(turn, best_guess, eval_list)
+        
+        # UI 콜백(대시보드)이 켜져 있을 때만 화면에 그리라고 데이터를 던져줌
         if self.observer_callback:
-            payload = self._extract_dashboard_data(turn, best_guess, eval_list)
             self.observer_callback(payload)
             
         return best_guess
