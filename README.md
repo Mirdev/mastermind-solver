@@ -176,9 +176,11 @@
 ---
 
 ## Installation
+```bash
 git clone https://github.com/사용자명/mastermind-solver.git
 cd mastermind-solver
 pip install -r requirements.txt
+```
 
 ---
 
