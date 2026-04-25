@@ -1,3 +1,5 @@
+# Python 3.11.x
+
 # Web Framework & Dashboard
 streamlit>=1.31.0
 
