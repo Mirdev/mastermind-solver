@@ -203,16 +203,16 @@ python simulations/run_simulation.py
 ```
 ### 4. Web Dashboard 실행 (실시간 관제)
 
-**1) 먼저 터미널 A에서 시뮬레이션 실행**
-
-```bash
-python simulations/self_play.py
-```
-
-**2) 터미널 B에서 웹 대시보드 가동**
+**1) 터미널 B에서 웹 대시보드 가동**
 
 ```bash
 streamlit run interface/web_dashboard.py
+```
+
+**2) 먼저 터미널 A에서 시뮬레이션 실행**
+
+```bash
+python simulations/self_play.py
 ```
 
 ---
