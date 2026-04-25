@@ -159,6 +159,7 @@
 
 ## GUI Dashboard example
 <img width="1467" height="862" alt="1" src="https://github.com/user-attachments/assets/cf1b2e5a-1a0f-4b3e-a9ae-ff76474660e5" />
+<img width="1430" height="822" alt="Image" src="https://github.com/user-attachments/assets/ab7bc134-18ea-42d7-8ba9-a32baf57fd63" />
 
 ---
 
