@@ -83,7 +83,7 @@ def run_self_play(use_dashboard=False):
         print(f"▶ 공격수: \"{guess}\" (계산: {step_time:.4f}s)")
         print(f"◁ 수비수: \"{strike}S {ball}B\"")
 
-        time.sleep(5) # slow mode
+        time.sleep(1) # slow mode
 
         # C. 종료 및 업데이트
         if (strike, ball) == (digits, 0):
