@@ -57,7 +57,7 @@ class HeuristicSolver:
             if self.engine.get_feedback(c, guess) == feedback
         ]
 
-    def _extract_dashboard_data(self, turn, best_guess, evaluation_list):
+    def _extract_dashboard_data(self, turn, best_guess, evaluation_list, status):
         """대시보드용 공용 데이터 구조 생성"""
         # 1번 대시보드용 확률 행렬 계산
         total = len(self.candidates)
@@ -70,6 +70,7 @@ class HeuristicSolver:
             "turn": turn,
             "solver_name": "HeuristicSolver",
             "best_guess": list(best_guess) if best_guess else [],
+            "status": status,  # 진행 중: "processing", 승리: "win", 패배: "lose",
             "dashboard_1_heatmap": {"probabilities": probs},
             "dashboard_2_trend": {"remaining_count": total},
             "dashboard_3_evaluation": {
@@ -114,14 +115,19 @@ class HeuristicSolver:
             best_guess = eval_list[0][0]
 
     	# [핵심 고정] 조건문 밖으로 탈출: 무조건 페이로드를 생성하고 내부에서 로깅까지 완료!
-        payload = self._extract_dashboard_data(turn, best_guess, eval_list)
+        payload = self._extract_dashboard_data(turn, best_guess, eval_list, "processing")
         
         # UI 콜백(대시보드)이 켜져 있을 때만 화면에 그리라고 데이터를 던져줌
         if self.observer_callback:
             self.observer_callback(payload)
             
         return best_guess
-        
+
+    def log_game_over(self, turn, guess, status):
+        """게임 종료 시 최종 상태(win/lose)를 강제로 한 번 더 로깅하여 대시보드에 알림"""
+        # 더 이상 계산할 필요 없으므로 eval_list는 빈 배열 전달
+        self._extract_dashboard_data(turn, guess, [], status=status)
+    
     def solve(self, secret):
         turns = 0
         while True:

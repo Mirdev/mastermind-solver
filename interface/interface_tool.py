@@ -32,6 +32,8 @@ def do_attack(solver, turn, digits):
             if s + b <= digits:
                 if (s, b) == (digits, 0):
                     print(f"\n🎉 승리! {turn}회 만에 정답을 맞혔습니다.")
+                    if hasattr(solver, 'log_game_over'):
+                        solver.log_game_over(turn, guess, "win")
                     return True
                 solver.update_candidates(guess, (s, b))
                 return False
@@ -48,6 +50,8 @@ def do_defense(engine, my_secret, digits, turn):
             print(f"   => 피드백: **{s} Strike, {b} Ball**")
             if (s, b) == (digits, 0):
                 print(f"\n💀 패배... 상대방이 {turn}회 만에 정답을 맞혔습니다.")
+                if hasattr(solver, 'log_game_over'):
+                        solver.log_game_over(turn, guess, "lose")
                 return True
             break
         print(f"   [!] {digits}자리 숫자를 입력해 주세요.")

@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Mastermind AI Neural 관제 센터</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* ==========================================
+           1. 극한의 압축 & 사이버펑크 테마
+           ========================================== */
+        body { margin: 0; font-family: 'Consolas', 'Courier New', monospace; display: flex; height: 100vh; background-color: #030509; color: #E2E8F0; overflow: hidden; box-sizing: border-box;}
+        * { box-sizing: inherit; }
+        
+        .sidebar { width: 250px; background-color: #080B14; padding: 1rem; border-right: 1px solid #161F33; display: flex; flex-direction: column; gap: 0.8rem; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.8);}
+        .sidebar h2 { font-size: 1.1rem; margin: 0; color: #38BDF8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4);}
+        .sidebar hr { border: 0; border-top: 1px solid #161F33; margin: 0; width: 100%;}
+        
+        .control-group { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer; color: #94A3B8;}
+        input[type="checkbox"] { accent-color: #38BDF8; cursor: pointer; width: 14px; height: 14px;}
+        input[type="range"] { width: 100%; accent-color: #38BDF8;}
+        
+        #file-list { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; padding-right: 2px;}
+        .log-btn { flex-shrink: 0; background: #0A0F1C; color: #94A3B8; border: 1px solid #161F33; padding: 6px 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; text-align: left; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+        .log-btn:hover { border-color: #38BDF8; color: #38BDF8;}
+        .log-btn.active { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border-color: #38BDF8; box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.2);}
+
+        .main-content { flex: 1; padding: 0.8rem 1.2rem; display: flex; flex-direction: column; gap: 0.6rem; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); position: relative; overflow: hidden;}
+        .header-title { font-size: 1.2rem; font-weight: bold; margin: 0; text-align: center; color: #F8FAFC; letter-spacing: 1px;}
+        
+        .metrics-row { display: flex; gap: 0.6rem; height: 60px; flex-shrink: 0;}
+        .metric-card { flex: 1; background: rgba(11, 17, 32, 0.7); border: 1px solid #1E293B; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;}
+        .metric-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, #38BDF8, transparent); }
+        .metric-label { font-size: 0.6rem; color: #64748B; text-transform: uppercase; margin-bottom: 1px;}
+        .metric-value { font-size: 1.1rem; font-weight: bold; color: #F1F5F9; text-shadow: 0 0 8px rgba(255,255,255,0.1);}
+        #m-status { font-size: 1.1rem; } 
+        
+        .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 0.8rem; flex: 1; min-height: 0;}
+        .chart-container { background: rgba(11, 17, 32, 0.5); border: 1px solid #1E293B; border-radius: 4px; padding: 0.6rem; display: flex; flex-direction: column; position: relative; box-shadow: inset 0 0 15px rgba(0,0,0,0.6); overflow: hidden;}
+        .chart-title { font-size: 0.8rem; margin: 0 0 0.4rem 0; color: #E2E8F0; border-left: 3px solid #38BDF8; padding-left: 6px; flex-shrink: 0;}
+
+        /* --- [Dash 1] 확률장 & 스캐너 라인 --- */
+        #dash1 { display: flex; gap: 4px; height: 100%; width: 100%; flex: 1; margin-top: -5px;}
+        .chamber { flex: 1; position: relative; border-right: 1px solid rgba(30, 41, 59, 0.5); background: rgba(0,0,0,0.1); height: 100%; overflow: hidden;}
+        .chamber:last-child { border-right: none; }
+        .chamber-title { position: absolute; top: 4px; left: 6px; font-size: 0.55rem; color: #475569; z-index: 5;}
+        .scanner-line { position: absolute; width: 100%; height: 2px; background: rgba(56, 189, 248, 0.8); box-shadow: 0 0 15px #38BDF8, 0 0 5px #FFF; z-index: 10; pointer-events: none;}
+
+        /* --- [Dash 2] 후보군 붕괴 --- */
+        #dash2 { flex: 1; position: relative; overflow: hidden; background: #050810;}
+        .shatter-rect { stroke: #030509; stroke-width: 0.5px;}
+        
+        /* --- [Dash 3] 전술 평가 --- */
+        #dash3 { display: flex; flex-direction: column; gap: 6px; justify-content: flex-start; height: 100%; overflow-y: auto; overflow-x: hidden; padding-top: 5px;}
+        .hud-bar-wrap { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; margin-bottom: 2px;}
+        .hud-label { width: 55px; color: #38BDF8; font-weight: bold; text-align: right;}
+        .hud-track { flex: 1; height: 8px; background: #0A0F1C; border: 1px solid #1E293B; position: relative;}
+        .hud-fill { height: 100%; background: linear-gradient(90deg, #0284C7, #38BDF8); transition: width 0.4s ease;}
+        .hud-score { width: 45px; color: #94A3B8; font-size: 0.7rem; text-align: right; white-space: nowrap;}
+
+        /* --- [Dash 4] 판단 근거 & VS --- */
+        #dash4 { display: flex; align-items: center; justify-content: center; gap: 20px; height: 100%; padding: 0 10px;}
+        .split-box { flex: 1; padding: 12px 8px; border: 1px solid; clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); display: flex; flex-direction: column; gap: 3px; font-size: 0.7rem;}
+        .best-box { border-color: #10B981; background: rgba(16, 185, 129, 0.05);}
+        .worst-box { border-color: #F43F5E; background: rgba(244, 63, 94, 0.05); text-align: right;}
+        .highlight { font-size: 1.1rem; font-weight: bold; color: #FFF; margin: 2px 0;}
+        .slide-in-left { animation: slideLeft 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }
+        .slide-in-right { animation: slideRight 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; }
+        .pulse-vs { font-size: 1.4rem; font-weight: 900; color: #475569; font-style: italic; animation: pulseVS 1s ease-in-out infinite; display: inline-block; margin: 0;}
+        .static-vs { font-size: 1.4rem; font-weight: 900; color: #475569; font-style: italic; display: inline-block; margin: 0; }
+        
+        @keyframes slideLeft { 0% { transform: translateX(-30px); opacity: 0; filter: blur(2px); } 100% { transform: translateX(0); opacity: 1; filter: blur(0); } }
+        @keyframes slideRight { 0% { transform: translateX(30px); opacity: 0; filter: blur(2px); } 100% { transform: translateX(0); opacity: 1; filter: blur(0); } }
+        @keyframes pulseVS { 0% { transform: scale(1); text-shadow: none; } 50% { transform: scale(1.2); text-shadow: 0 0 10px #F43F5E; color: #F43F5E; } 100% { transform: scale(1); text-shadow: none; } }
+
+        /* --- 공통 --- */
+        #standby-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3, 5, 9, 0.9); z-index: 50; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(4px);}
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(56, 189, 248, 0.1); border-radius: 50%; border-top: 4px solid #38BDF8; border-right: 4px solid #38BDF8; animation: spin 1s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite; margin-bottom: 20px;}
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .axis text { fill: #475569; font-size: 9px;}
+        .axis path, .axis line { stroke: #1E293B; }
+        .wave-line { fill: none; stroke-width: 2; stroke-linecap: round; filter: drop-shadow(0 0 3px currentColor);}
+        .strike-laser { stroke: #FFF; stroke-width: 1.5; stroke-dasharray: 3,3; filter: drop-shadow(0 0 4px #FFF); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>🕹️ 관제 센터</h2>
+        <div id="status-indicator" style="color: #64748B; font-size: 0.75rem; font-weight: bold;">부팅 중...</div>
+        <hr>
+        <label class="control-group"><input type="checkbox" id="chk-live" checked> 🔴 Live 모니터링</label>
+        <label class="control-group"><input type="checkbox" id="chk-auto" checked> 🔄 자동 갱신</label>
+        <input type="range" id="slider-rate" min="0.5" max="3.0" step="0.1" value="1.0">
+        <hr>
+        <div id="file-list"></div>
+    </div>
+
+    <div class="main-content">
+        <div id="standby-overlay" style="display:none">
+            <div class="spinner"></div>
+            <h2 style="color: #38BDF8; margin: 0; font-size: 1.2rem;">새로운 시뮬레이션 대기 중...</h2>
+        </div>
+
+        <div class="header-title">⚾ MASTERMIND NEURAL LINK</div>
+
+        <div class="metrics-row">
+            <div class="metric-card"><div class="metric-label">Solver</div><div class="metric-value" id="m-solver">-</div></div>
+            <div class="metric-card"><div class="metric-label">Turn</div><div class="metric-value" id="m-turn">-</div></div>
+            <div class="metric-card"><div class="metric-label">Remaining</div><div class="metric-value" id="m-remains">-</div></div>
+            <div class="metric-card"><div class="metric-label">Target</div><div class="metric-value" id="m-guess">-</div></div>
+            <div class="metric-card"><div class="metric-label">Status</div><div class="metric-value" id="m-status">-</div></div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="chart-container">
+                <h3 class="chart-title">[Dash 1] 확률장 4-Chamber</h3>
+                <div id="dash1">
+                    <div class="chamber" id="ch0"></div>
+                    <div class="chamber" id="ch1"></div>
+                    <div class="chamber" id="ch2"></div>
+                    <div class="chamber" id="ch3"></div>
+                </div>
+            </div>
+            <div class="chart-container">
+                <h3 class="chart-title">[Dash 2] 후보군 붕괴 (Gravity Shatter)</h3>
+                <div id="dash2"></div>
+            </div>
+            <div class="chart-container">
+                <h3 class="chart-title">[Dash 3] 전술 평가 (HUD Leaderboard)</h3>
+                <div id="dash3"></div>
+            </div>
+            <div class="chart-container">
+                <h3 class="chart-title">[Dash 4] 판단 근거 (Neural Split)</h3>
+                <div id="dash4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const safeJoin = (v) => Array.isArray(v) ? v.join("") : (v || "-");
+        const flatVal = (v) => Array.isArray(v) ? flatVal(v[0]) : v;
+        
+        function parseSplit(arr) {
+            if (!arr || !Array.isArray(arr) || arr.length === 0) return {s:'-', b:'-', c:'-'};
+            let target = (Array.isArray(arr[0]) && Array.isArray(arr[0][0])) ? arr[0] : arr;
+            if (Array.isArray(target) && target.length >= 2 && Array.isArray(target[0])) {
+                return {s: target[0][0], b: target[0][1], c: target[1]};
+            }
+            return {s:'-', b:'-', c:'-'};
+        }
+
+        let state = { isLive: true, isStandby: true, autoRefresh: true, refreshRate: 1000, selectedFile: null, logFiles: [], baselineFile: null, baselineDataStr: "", currentDataStr: "" };
+        let gridInit = false, prevHistoryLength = 0;
+
+        async function scanLogDirectory() {
+            try {
+                const res = await fetch('/logs/');
+                const text = await res.text();
+                const files = Array.from(new DOMParser().parseFromString(text, 'text/html').querySelectorAll('a'))
+                    .map(a => a.getAttribute('href')).filter(h => h.endsWith('.jsonl'))
+                    .map(h => h.replace(/.*logs\//, '')).sort().reverse();
+                if (JSON.stringify(files) !== JSON.stringify(state.logFiles)) { state.logFiles = files; updateFileListUI(); }
+            } catch (e) {}
+        }
+
+        async function bootSequence() {
+            await scanLogDirectory();
+            state.baselineFile = state.logFiles[0] || null;
+            if (state.baselineFile) {
+                try { const res = await fetch(`/logs/${state.baselineFile}?t=${Date.now()}`); state.baselineDataStr = await res.text(); } catch(e) {}
+            }
+            setInterval(mainLoop, state.refreshRate);
+        }
+
+        function updateFileListUI() {
+            const container = document.getElementById('file-list'); container.innerHTML = "";
+            state.logFiles.forEach(file => {
+                const btn = document.createElement('button');
+                btn.className = `log-btn ${state.selectedFile === file && !state.isLive ? 'active' : ''}`;
+                btn.innerText = file;
+                btn.onclick = () => {
+                    state.isLive = false; state.isStandby = false; document.getElementById('chk-live').checked = false;
+                    document.getElementById('standby-overlay').style.display = 'none';
+                    state.selectedFile = file; state.currentDataStr = ""; 
+                    prevHistoryLength = 0; gridInit = false; 
+                    window.dash1State = null; window.dash3State = null; window.dash4State = null;
+                    updateFileListUI(); fetchAndRender(file);
+                };
+                container.appendChild(btn);
+            });
+        }
+
+        async function mainLoop() {
+            await scanLogDirectory();
+            if (!state.isLive || !state.autoRefresh) return;
+            const target = state.logFiles[0]; if (!target) return; 
+            try {
+                const res = await fetch(`/logs/${target}?t=${Date.now()}`);
+                const text = await res.text();
+                if (state.isStandby) {
+                    if (target !== state.baselineFile || (text !== state.baselineDataStr && text.trim() !== "")) {
+                        state.isStandby = false; document.getElementById('standby-overlay').style.display = 'none'; 
+                        gridInit = false; prevHistoryLength = 0; window.dash1State = null; window.dash3State = null; window.dash4State = null;
+                    } else { document.getElementById('standby-overlay').style.display = 'flex'; return; }
+                }
+                if (text === state.currentDataStr) return; 
+                state.currentDataStr = text; renderAll(text, target);
+            } catch(e) {}
+        }
+
+        async function fetchAndRender(target) { try { const res = await fetch(`/logs/${target}?t=${Date.now()}`); renderAll(await res.text(), target); } catch(e) {} }
+
+        function renderAll(text, targetFile) {
+            const lines = text.trim().split('\n').filter(l => l);
+            if (!lines.length) return;
+            const history = lines.map(l => JSON.parse(l));
+            const latest = history[history.length - 1];
+
+            const remains = Number(latest.dashboard_2_trend?.remaining_count || 1);
+            const currentTurn = Number(latest.turn || 1);
+            const statusVal = latest.status || "processing";
+
+            document.getElementById('m-solver').innerText = latest.solver_name || "Unknown";
+            document.getElementById('m-turn').innerText = currentTurn;
+            document.getElementById('m-remains').innerText = remains;
+            document.getElementById('m-guess').innerText = latest.best_guess ? `[${safeJoin(latest.best_guess)}]` : "-";
+
+            const stCard = document.getElementById('m-status');
+            let displayStatus = statusVal;
+            if (remains <= 1) displayStatus = "win";
+            else if (currentTurn >= 9 && statusVal !== "win") displayStatus = "lose";
+
+            if (displayStatus === "win") { stCard.innerText = "🎯 TARGET HIT"; stCard.style.color = "#F59E0B"; }
+            else if (displayStatus === "lose") { stCard.innerText = "💀 GAME OVER"; stCard.style.color = "#F43F5E"; }
+            else { stCard.innerText = "PROCESSING ⏳"; stCard.style.color = "#38BDF8"; }
+
+            if (history.length < prevHistoryLength || currentTurn === 1) { 
+                gridInit = false; window.dash1State = null; window.dash3State = null; window.dash4State = null;
+            }
+            prevHistoryLength = history.length;
+
+            // 중앙 집중형 직접 렌더링 방식 (내부 가드에서 판단)
+            renderDash1(latest, displayStatus);
+            renderDash2(history); 
+            renderDash3(latest, displayStatus);
+            renderDash4(latest, displayStatus);
+        }
+
+	// =================================================================
+        // [Dash 1] 확률장 4-Chamber: True 1-Pass Sync Masking & Cool-down Glow
+        // =================================================================
+        function renderDash1(data, status) {
+            const probs = data.dashboard_1_heatmap?.probabilities;
+            if (!probs) return;
+            const colors = ["#F43F5E", "#38BDF8", "#10B981", "#F59E0B"];
+            
+            if (!window.dash1State) window.dash1State = { turn: -1, chambers: [{},{},{},{}] };
+            
+            const isNewTurn = window.dash1State.turn !== data.turn;
+            window.dash1State.turn = data.turn;
+
+            probs.forEach((posProbs, i) => {
+                let ch = window.dash1State.chambers[i];
+                const c = document.getElementById(`ch${i}`); 
+                const w = c.clientWidth, h = c.clientHeight;
+
+                if (!ch.initialized) {
+                    c.innerHTML = '<div class="chamber-title">POS '+(i+1)+'</div>';
+                    const svg = d3.select(c).append("svg").attr("width", "100%").attr("height", "100%");
+                    const defs = svg.append("defs");
+                    
+                    ch.clipNewId = `clip-new-ch${i}`;
+                    ch.clipOldId = `clip-old-ch${i}`;
+                    
+                    defs.append("clipPath").attr("id", ch.clipNewId).append("rect").attr("class", "rect-new").attr("x", 0).attr("y", 0).attr("width", w).attr("height", 0);
+                    defs.append("clipPath").attr("id", ch.clipOldId).append("rect").attr("class", "rect-old").attr("x", 0).attr("y", 0).attr("width", w).attr("height", h);
+                    
+                    ch.x = d3.scaleLinear().domain([0, 1]).range([i===0?25:10, w-10]);
+                    ch.y = d3.scalePoint().domain(d3.range(10)).range([15, h-15]);
+                    if (i === 0) svg.append("g").attr("transform", "translate(22,0)").call(d3.axisLeft(ch.y).tickSize(2));
+                    
+                    // [수정] 과거 그래프: 초기 투명도 설정 제거. (이벤트 발생 시 동적으로 제어)
+                    const gOld = svg.append("g").attr("clip-path", `url(#${ch.clipOldId})`);
+                    ch.pathOld = gOld.append("path").attr("class", "wave-line").attr("stroke", colors[i]);
+                    ch.laserOld = gOld.append("line").attr("class", "strike-laser").attr("stroke", "#FFF").style("display", "none");
+
+                    // 새 그래프
+                    const gNew = svg.append("g").attr("clip-path", `url(#${ch.clipNewId})`);
+                    ch.pathNew = gNew.append("path").attr("class", "wave-line").attr("stroke", colors[i]);
+                    ch.laserNew = gNew.append("line").attr("class", "strike-laser").attr("stroke", "#FFF").style("display", "none");
+                    
+                    ch.scanner = d3.select(c).append("div").attr("class", "scanner-line").style("top", "0px").style("opacity", 0);
+                    ch.svg = svg; ch.w = w; ch.h = h; ch.initialized = true;
+                }
+
+// 새 턴이 감지되었을 때 단 1회 스캔 실행 (승리 상태여도 무조건 강제 실행)
+                if (isNewTurn) {
+                    if (!('currProbs' in ch)) {
+                        ch.currProbs = posProbs;
+                        ch.currGuess = data.best_guess ? data.best_guess[i] : null;
+                    }
+                    
+                    ch.prevProbs = ch.currProbs;
+                    ch.prevGuess = ch.currGuess;
+                    ch.currProbs = posProbs;
+                    ch.currGuess = data.best_guess ? data.best_guess[i] : null;
+
+                    const lineGen = d3.line().curve(d3.curveMonotoneY).x(d => ch.x(d.prob)).y(d => ch.y(d.digit));
+                    
+                    // 과거 그래프를 다시 100% 글로우 상태로 켠 뒤 렌더링
+                    ch.pathOld.datum(d3.range(10).map(d=>({digit:d, prob:ch.prevProbs[d]}))).attr("d", lineGen).style("opacity", 1);
+                    ch.pathNew.datum(d3.range(10).map(d=>({digit:d, prob:ch.currProbs[d]}))).attr("d", lineGen);
+
+                    if (ch.prevGuess !== null) {
+                        ch.laserOld.attr("x1", 0).attr("x2", ch.w).attr("y1", ch.y(ch.prevGuess)).attr("y2", ch.y(ch.prevGuess))
+                                   .style("display", "block").style("opacity", 1);
+                    } else ch.laserOld.style("display", "none");
+
+                    if (ch.currGuess !== null) {
+                        ch.laserNew.attr("x1", 0).attr("x2", ch.w).attr("y1", ch.y(ch.currGuess)).attr("y2", ch.y(ch.currGuess))
+                                   .style("display", "block");
+                    } else ch.laserNew.style("display", "none");
+
+                    // 마스크 및 스캐너 초기 위치 세팅
+                    ch.svg.select(".rect-new").interrupt().attr("y", 0).attr("height", 0);
+                    ch.svg.select(".rect-old").interrupt().attr("y", 0).attr("height", ch.h);
+                    ch.scanner.interrupt().style("top", "0px").style("opacity", 1).style("display", "block");
+
+                    const scanTime = 800; 
+                    const delay = i * 150; 
+
+                    // 1. 단절 마스킹 (스캐너 라인을 경계로 완벽히 분리)
+                    ch.svg.select(".rect-new").transition().delay(delay).duration(scanTime).ease(d3.easeLinear).attr("height", ch.h);
+                    ch.svg.select(".rect-old").transition().delay(delay).duration(scanTime).ease(d3.easeLinear).attr("y", ch.h).attr("height", 0);
+                    
+                    // 2. 스캐너 하강
+                    ch.scanner.transition().delay(delay).duration(scanTime).ease(d3.easeLinear).style("top", `${ch.h}px`)
+                              .transition().duration(200).style("opacity", 0)
+                              .on("end", () => { ch.scanner.style("display", "none"); });
+
+                    // 3. 쿨다운 이펙트 (과거 그래프가 스캔 진행과 함께 1.0 -> 0.25 투명도로 서서히 식어감)
+                    ch.pathOld.transition().delay(delay).duration(scanTime * 1.5).ease(d3.easeCubicOut).style("opacity", 0.25);
+                    if (ch.prevGuess !== null) {
+                        ch.laserOld.transition().delay(delay).duration(scanTime * 1.5).ease(d3.easeCubicOut).style("opacity", 0.25);
+                    }
+
+                } else if (status === 'win' || status === 'lose') {
+                     // 턴이 바뀌지 않은 상태(애니메이션 종료 후)에서 게임이 끝났다면, 재실행 방지를 위한 정지 상태 유지
+                     ch.svg.select(".rect-new").interrupt().attr("y", 0).attr("height", ch.h);
+                     ch.svg.select(".rect-old").interrupt().attr("y", ch.h).attr("height", 0);
+                     ch.scanner.interrupt().style("opacity", 0).style("display", "none");
+                }
+            });
+        }
+
+        // =========================================================
+        // [핵심 해결] 팡 터지고 포물선을 그리며 바닥(X축)으로 떨어지는
+        // 독립 X/Y축 물리 엔진 (Gravity & Scatter)
+        // =========================================================
+        function renderDash2(history) {
+            const container = document.getElementById('dash2');
+            const w = container.clientWidth, h = container.clientHeight;
+            if(w === 0 || h === 0) return;
+
+            const DIVIDER = 1.5; 
+            const trueMaxRemains = Number(history[0].dashboard_2_trend?.remaining_count || 1);
+            const trueCurrentRemains = Number(history[history.length - 1].dashboard_2_trend?.remaining_count || 1);
+            
+            const targetVisibleCount = Math.max(1, Math.floor(trueCurrentRemains / DIVIDER));
+            const TARGET_PIXELS = Math.floor(trueMaxRemains / DIVIDER); 
+
+            const ratio = w / h;
+            const GRID_ROWS = Math.max(1, Math.ceil(Math.sqrt(TARGET_PIXELS / ratio)));
+            const GRID_COLS = Math.max(1, Math.ceil(TARGET_PIXELS / GRID_ROWS));
+            const DRAW_PIXELS = GRID_ROWS * GRID_COLS; 
+            
+            const rectW = w / GRID_COLS;
+            const rectH = h / GRID_ROWS;
+
+            if (!gridInit) {
+                d3.select("#dash2").selectAll("*").remove(); 
+                const svg = d3.select("#dash2").append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${w} ${h}`);
+                const gridGroup = svg.append("g").attr("class", "pixel-grid");
+                const rectData = Array.from({length: DRAW_PIXELS}, (_, i) => i);
+                
+                gridGroup.selectAll(".shatter-rect").data(rectData).enter().append("rect")
+                    .attr("class", "shatter-rect")
+                    .attr("x", d => (d % GRID_COLS) * rectW)
+                    .attr("y", d => Math.floor(d / GRID_COLS) * rectH)
+                    .attr("width", Math.max(0.5, rectW)) 
+                    .attr("height", Math.max(0.5, rectH))
+                    .attr("fill", "rgba(56, 189, 248, 0.4)")
+                    .attr("data-active", "true");
+                    
+                svg.append("g").attr("class", "line-layer");
+                gridInit = true; 
+            }
+
+            d3.selectAll(".shatter-rect[data-active='false']")
+                .interrupt()
+                .style("opacity", 0)
+                .style("display", "none");
+
+            const activeNodes = d3.selectAll(".shatter-rect[data-active='true']").nodes();
+            const visualSurviveRatio = trueCurrentRemains / trueMaxRemains;
+            const visualTargetVisible = Math.floor(visualSurviveRatio * DRAW_PIXELS);
+            let toShatter = activeNodes.length - visualTargetVisible;
+            
+            if (toShatter > 0) {
+                d3.shuffle(activeNodes);
+                for (let i = 0; i < toShatter; i++) {
+                    const node = d3.select(activeNodes[i]).attr("data-active", "false");
+                    
+                    const startX = +node.attr("x");
+                    const startY = +node.attr("y");
+
+                    // 물리량 계산 (X축: 관성 / Y축: 폭발 후 중력)
+                    const spreadX = (Math.random() - 0.5) * 400; // 좌우 비산 거리
+                    const targetX = Math.max(0, Math.min(w - rectW, startX + spreadX)); // 화면 안 벗어나게 제한
+                    
+                    const jumpY = startY - (50 + Math.random() * 100); // 팡! 솟구치는 높이
+                    const fallY = h - rectH + 3; // [핵심] 바닥(X축)의 절대 좌표!
+
+                    const totalTime = 1200 + Math.random() * 1000; // 애니메이션 시간 대폭 증가 (1.2초 ~ 2.2초)
+                    const jumpTime = totalTime * 0.3; // 30%의 시간 동안 솟구침
+                    const fallTime = totalTime * 0.7; // 70%의 시간 동안 추락
+
+                    // 0. 하얗게 점화
+                    node.attr("fill", "#FFF");
+
+                    // 1. X축 독립 이동 (직선으로 부드럽게 감속)
+                    node.transition("moveX")
+                        .duration(totalTime)
+                        .ease(d3.easeQuadOut)
+                        .attr("x", targetX);
+
+                    // 2. 파편 크기 축소 (파괴 효과)
+                    node.transition("shrink")
+                        .duration(jumpTime)
+                        .attr("width", Math.max(1, rectW * 0.5))
+                        .attr("height", Math.max(1, rectH * 0.5));
+
+                    // 3. Y축 독립 이동 (위로 팡! ➔ 아래로 쿵!)
+                    node.transition("moveY")
+                        .duration(jumpTime)
+                        .ease(d3.easeCubicOut) // 위로 갈 땐 감속
+                        .attr("y", jumpY)
+                        .transition() // 이어서
+                        .duration(fallTime)
+                        .ease(d3.easeBounceOut) // 바닥으로 추락 + 바운스!
+                        .attr("y", fallY)
+                        .transition() // 바닥에 닿은 후 스르륵 소멸
+                        .duration(400)
+                        .style("opacity", 0)
+                        .remove();
+                }
+            }
+
+            const svg = d3.select("#dash2 svg");
+            const lineLayer = svg.select(".line-layer");
+            lineLayer.selectAll("*").remove();
+            
+            const maxTurn = Math.max(d3.max(history, d=>Number(d.turn)) || 2, 2);
+            const x = d3.scaleLinear().domain([1, maxTurn]).range([15, w-15]);
+            const y = d3.scaleLinear().domain([0, trueMaxRemains]).range([h-30, 15]);
+
+            const lineGen = d3.line().x(d => x(Number(d.turn))).y(d => y(Number(d.dashboard_2_trend?.remaining_count || 0))).curve(d3.curveLinear);
+            
+            lineLayer.append("path").datum(history).attr("fill", "none").attr("stroke", "#FFF").attr("stroke-width", 2.5).attr("filter", "drop-shadow(0 0 5px #FFF)").attr("d", lineGen);
+            lineLayer.selectAll("circle").data(history).enter().append("circle").attr("cx", d=>x(Number(d.turn))).attr("cy", d=>y(Number(d.dashboard_2_trend?.remaining_count || 0))).attr("r", 4).attr("fill", "#38BDF8");
+            
+            lineLayer.raise();
+        }
+
+        // [Dash 3] 전술 평가 (Soft-Update 방어막 탑재)
+        function renderDash3(data, status) {
+            if (!window.dash3State) window.dash3State = { turn: -1, status: '' };
+            
+            // 변경사항이 없으면 렌더링 완전 패스
+            if (window.dash3State.turn === data.turn && window.dash3State.status === status) return;
+            
+            const container = document.getElementById("dash3");
+            
+            // [해결] 동일 턴에서 상태만 'win'으로 바뀌었다면, 꿀렁이는 재렌더링 없이 조용히 스타일만 업데이트 (Soft-Update)
+            if (window.dash3State.turn === data.turn && status === 'win') {
+                const firstRow = container.querySelector('.hud-bar-wrap');
+                if (firstRow) {
+                    firstRow.querySelector('.hud-label').style.color = '#10B981';
+                    firstRow.querySelector('.hud-fill').style.background = 'linear-gradient(90deg, #059669, #10B981)';
+                    firstRow.querySelector('.hud-fill').style.boxShadow = '0 0 10px #10B981';
+                    firstRow.querySelector('.hud-fill').style.width = '100%';
+                    firstRow.querySelector('.hud-score').style.color = '#10B981';
+                    firstRow.querySelector('.hud-score').innerText = 'FINAL';
+                    
+                    const allRows = container.querySelectorAll('.hud-bar-wrap');
+                    for (let i = 1; i < allRows.length; i++) allRows[i].style.display = 'none';
+                }
+                window.dash3State.status = status;
+                return;
+            }
+
+            window.dash3State.turn = data.turn;
+            window.dash3State.status = status;
+
+            let topPicks = data.dashboard_3_evaluation?.top_guesses || [];
+            if (topPicks.length === 0 && data.best_guess) topPicks = [{ guess: data.best_guess, score: 100 }];
+
+            if(status === 'win' || Number(data.dashboard_2_trend?.remaining_count) <= 1) {
+                if (data.best_guess) {
+                    container.innerHTML = `<div class="hud-bar-wrap">
+                        <div class="hud-label matrix-text" style="color:#10B981" data-val="[${safeJoin(data.best_guess)}]">[####]</div>
+                        <div class="hud-track"><div class="hud-fill" style="width: 100%; background: linear-gradient(90deg, #059669, #10B981); box-shadow: 0 0 10px #10B981;"></div></div>
+                        <div class="hud-score" style="color:#10B981">FINAL</div>
+                    </div>`;
+                    runMatrixEffect();
+                    return;
+                }
+            }
+
+            if(!topPicks.length) { container.innerHTML = "<div style='color:#444; text-align:center; padding-top:20px;'>탐색 중...</div>"; return; }
+            container.innerHTML = "";
+            const maxS = d3.max(topPicks, d => d.score) || 1;
+            topPicks.forEach(p => {
+                container.innerHTML += `<div class="hud-bar-wrap">
+                    <div class="hud-label matrix-text" data-val="[${safeJoin(p.guess)}]">[####]</div>
+                    <div class="hud-track"><div class="hud-fill" style="width: ${(p.score/maxS)*100}%"></div></div>
+                    <div class="hud-score">${p.score.toFixed(2)}</div>
+                </div>`;
+            });
+            runMatrixEffect();
+        }
+
+        function runMatrixEffect() {
+            const elements = document.querySelectorAll('.matrix-text');
+            elements.forEach(el => {
+                const finalVal = el.getAttribute('data-val');
+                let cycles = 0;
+                const interval = setInterval(() => {
+                    el.innerText = '[' + Array.from({length:4}, () => Math.floor(Math.random()*10)).join('') + ']';
+                    cycles++;
+                    if(cycles > 8) { clearInterval(interval); el.innerText = finalVal; }
+                }, 40);
+            });
+        }
+
+        // [Dash 4] 판단 근거 (Soft-Update 기반 VS 킬 스위치 장착)
+        function renderDash4(data, status) {
+            if (!window.dash4State) window.dash4State = { turn: -1, status: '' };
+            
+            if (window.dash4State.turn === data.turn && window.dash4State.status === status) return;
+            
+            const container = document.getElementById("dash4"); 
+            
+            // [해결] 동일 턴에서 'win' 상태가 되었을 때, 박스를 재렌더링하지 않고 VS 글자의 클래스만 교체하여 심장박동을 멈춤
+            if (window.dash4State.turn === data.turn && (status === 'win' || status === 'lose')) {
+                const vsText = container.querySelector('.vs-text');
+                if (vsText) {
+                    vsText.classList.remove('pulse-vs');
+                    vsText.classList.add('static-vs');
+                }
+                window.dash4State.status = status;
+                return;
+            }
+
+            window.dash4State.turn = data.turn;
+            window.dash4State.status = status;
+
+            const evalData = data.dashboard_3_evaluation || {};
+            const isEnded = (status === 'win' || status === 'lose');
+            const vsHTML = `<div class="vs-text ${isEnded ? 'static-vs' : 'pulse-vs'}">VS</div>`;
+            
+            if(evalData.expected_splits && evalData.expected_splits.length > 0) {
+                const sp = parseSplit(evalData.expected_splits[0]);
+                const wcInfo = evalData.worst_split_comparison || {};
+                const wcGuess = wcInfo.guess || ['-','-','-','-'];
+                const wc = parseSplit(wcInfo.splits);
+                
+                container.innerHTML = `<div class="split-box best-box slide-in-left"><span style="color:#10B981">TARGET ADOPTED</span><div class="highlight">[${safeJoin(data.best_guess)}]</div>
+                    <div>최악 피드백: ${sp.s}S ${sp.b}B</div><div>➔ 생존 노드: <span class="highlight">${sp.c}</span></div></div>
+                    ${vsHTML}
+                    <div class="split-box worst-box slide-in-right"><span style="color:#F43F5E">WORST CASE</span><div class="highlight">[${safeJoin(wcGuess)}]</div>
+                    <div>동일 피드백: ${wc.s}S ${wc.b}B</div><div>➔ 생존 노드: <span class="highlight">${wc.c}</span></div></div>`;
+            } else if (evalData.top_guesses && evalData.top_guesses.length >= 2) {
+                const best = evalData.top_guesses[0], worst = evalData.top_guesses[evalData.top_guesses.length-1];
+                container.innerHTML = `<div class="split-box best-box slide-in-left"><span style="color:#10B981">BEST FREQ</span><div class="highlight">[${safeJoin(best.guess)}]</div><div>가중치: ${best.score.toFixed(2)}</div></div>
+                    ${vsHTML}
+                    <div class="split-box worst-box slide-in-right"><span style="color:#F43F5E">COMPETITOR</span><div class="highlight">[${safeJoin(worst.guess)}]</div><div>가중치: ${worst.score.toFixed(2)}</div></div>`;
+            } else {
+                if (data.best_guess) {
+                    container.innerHTML = `<div class="split-box best-box slide-in-left"><span style="color:#10B981">TARGET ADOPTED</span><div class="highlight">[${safeJoin(data.best_guess)}]</div><div>단일 후보 추론 (연산 생략)</div></div>
+                        ${vsHTML}
+                        <div class="split-box worst-box slide-in-right" style="opacity: 0.5;"><span style="color:#F43F5E">NO COMPETITOR</span><div class="highlight">[-]</div><div>비교 대상 없음</div></div>`;
+                } else {
+                    container.innerHTML = "<div style='width:100%; text-align:center; color:#444;'>[데이터 수집 중]</div>"; 
+                }
+            }
+        }
+
+        bootSequence();
+    </script>
+</body>
+</html>
