@@ -8,9 +8,11 @@
 
 ## Key Features
 
-* **Dual-Engine Architecture**:
-    * **Entropy Solver**: Shannon Entropy 기반. 이론적 최적해를 지향하며 최소 턴 수를 보장합니다. (중복 허용 규칙에서 탁월)
-    * **Heuristic Solver**: 위치별 빈도 분석 기반. 연산 비용이 매우 낮아 대규모 시뮬레이션 및 실시간 처리에 적합합니다.
+* **Multi-Tier Architecture (New)**:
+    * **FastEntropySolver**: 순수 파이썬 루프를 배제하고 NumPy 3차원 브로드캐스팅 및 행렬 교차 연산을 적용하여, 대규모 시뮬레이션에서 압도적인 속도를 자랑하는 벡터라이제이션 솔버입니다.
+    * **Entropy Solver**: Shannon Entropy 기반의 표준 솔버. 이론적 최적해를 지향하며 최소 턴 수를 보장합니다.
+    * **Heuristic Solver**: 위치별 빈도 분석(Naive Bayesian) 기반으로 연산 비용이 매우 낮아 실시간 처리에 적합합니다.
+* **MastermindLUTEngine (O(1) Accelerator)**: 4자리 규칙 환경에서 1억 개의 피드백 조합을 사전 연산하여 `numpy.int8` 바이너리 캐시(.npy)로 구축합니다. 런타임 연산을 $O(1)$로 단축하여 병목을 완전히 제거했습니다.
 * **Flexible Rule Support**: 자릿수 변경(Default 4), 중복 허용(Duplicates), 0으로 시작하는 숫자(Leading Zero) 등 하드코어 규칙 완벽 대응.
 * **Performance Fine-tuning**:
     * **Class-level Caching**: 후보군 생성 오버헤드 최소화.
@@ -203,6 +205,8 @@
 8. **Dual Clip-path Sync Masking (ECG Architecture)**: 대시보드 1의 심전도(ECG) 효과를 위해 D3.js의 듀얼 클립 패스(Dual Clip-path) 기술을 도입했습니다. 스캐너의 Y좌표와 마스크의 높이를 1ms 오차 없이 동기화하여, 데이터가 '바뀌는 것'이 아니라 선을 경계로 '물리적으로 덧씌워지는' 고정밀 시각화를 구현했습니다.
 9. **Recursive Animation Kill-switch**: 비동기적으로 실행되는 JS 애니메이션 루프와 실시간 데이터 수신 턴 사이의 충돌을 방지하기 위해 글로벌 킬 스위치(Global Kill-switch) 로직을 설계했습니다. 'TARGET HIT' 또는 'GAME OVER' 상태 감지 즉시 모든 재귀 호출을 중단하고 최종 상태로 UI를 고정하여 리소스 낭비와 시각적 노이즈를 차단합니다.
 10. **Physics-based Entropy Visualization**: 단순한 수치 변동을 넘어, 정보 엔트로피가 해소되는 과정을 **D3 물리 엔진(Gravity & Scatter)**으로 형상화했습니다. 후보군이 파괴되어 쏟아지는 연출은 솔버가 불확실성을 제거하는 물리적 과정을 사용자에게 직관적으로 전달합니다.
+11. **True Vectorization & Broadcasting**: `FastEntropySolver`에서는 파이썬의 이중 `for` 루프를 완전히 해체했습니다. NumPy의 `np.ix_`를 활용한 메모리 슬라이싱과 히스토그램 교집합 연산(`np.minimum`) 기반의 3차원 브로드캐스팅을 도입하여 1,500만 번의 검증 루프를 단일 벡터 연산으로 압축했습니다.
+12. **O(1) Look-Up Table (LUT) Caching**: 실시간 연산 오버헤드를 극복하기 위해 `MastermindLUTEngine`을 도입했습니다. 프로그램 구동 시 10,000 x 10,000 크기의 피드백 행렬을 비트 마스킹(Bit-masking) 처리하여 100MB 크기의 `int8` 배열로 메모리에 상주시키며, 이후 모든 판정은 $O(1)$의 단순 참조 연산으로 처리됩니다.
 
 ---
 
@@ -280,11 +284,14 @@ python simulations/self_play.py [-d]
 ```text
 .
 ├── src/
-│   ├── game_engine/    # 핵심 게임 로직 및 피드백 엔진
-│   └── solvers/        # Entropy 및 Heuristic 알고리즘 구현체
-├── interface/          # CLI, GUI 및 D3.js 기반 대시보드 렌더러 및 인터랙티브 툴(상대방과 대결시 사용 툴)
-├── simulations/        # 벤치마크 및 AI 자가 대결 스크립트
-├── logs/               # JSONL 시뮬레이션 로그 기록 폴더
+│   ├── game_engine.py    # 범용 N자리 피드백 엔진
+│   ├── lut_engine.py     # O(1) 가속 LUT 캐시 엔진 (4자리 전용)
+│   ├── lut_generator.py  # 초기 1억 개 데이터 세팅 스크립트
+│   └── solvers/          # Entropy, FastEntropy, Heuristic 구현체
+├── data/                 # 자동 생성된 .npy 캐시 파일 저장소 (gitignore)
+├── interface/            # CLI, GUI 및 D3.js 기반 대시보드
+├── simulations/          # 벤치마크 및 AI 자가 대결 스크립트
+├── logs/                 # JSONL 시뮬레이션 로그 
 └── README.md
 ```
 
