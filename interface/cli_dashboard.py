@@ -24,12 +24,17 @@ class CLIDashboard:
         remains = data['dashboard_2_trend']['remaining_count']
         metric_name = data['dashboard_3_evaluation']['metric_name']
         eval_data = data['dashboard_3_evaluation']
-        best_guess = data['best_guess']
+        # best_guess가 없을 경우 빈 리스트로 안전하게 가져오기
+        best_guess = data.get('best_guess', []) 
         probs = data['dashboard_1_heatmap']['probabilities']
         num_pos = len(probs)
+        status = data.get('status', '')
         
         print(f"\n" + "="*62)
-        print(f"[{solver}] Turn {turn} 시각화 분석 리포트")
+        if status == "standby":
+            print(f"[{solver}] Turn {turn} 피드백 반영 완료 (다음 수 대기 중...)")
+        else:
+            print(f"[{solver}] Turn {turn} 시각화 분석 리포트")
         print(f"="*62)
         
         # [Dash 2] 후보군 현황
@@ -39,48 +44,58 @@ class CLIDashboard:
         print(f"▶ [Dash 3] {metric_name} 상위 추천:")
         top_picks = eval_data.get('top_guesses', [])
         if not top_picks:
-            print("   (초반 턴 속도 최적화를 위해 탐색 스킵)")
+            if status == "standby":
+                print("   (다음 수를 계산하기 위해 대기 중입니다.)")
+            else:
+                print("   (초반 턴 속도 최적화를 위해 탐색 스킵)")
         else:
             for i, pick in enumerate(top_picks[:3]):
                 print(f"   {i+1}. {pick['guess']} (점수: {pick['score']:.4f})")
 
         # [Dash 4] 솔버별 결정적 근거 (Why this guess?)
-        print(f"▶ [Dash 4] AI의 결정적 근거 (Why {best_guess}?):")
-        if solver == "EntropySolver" and 'expected_splits' in eval_data:
-            splits = eval_data['expected_splits']
-            worst_comp = eval_data.get('worst_split_comparison', {})
-            if not splits:
-                print("   (탐색 스킵)")
-            else:
-                print(f"   [채택] {best_guess}를 찔렀을 때 (엔트로피 최고점):")
-                print(f"     ├─ 가장 운이 나쁜 [{splits[0][0][0]}S {splits[0][0][1]}B] 판정 시에도 ➔ {splits[0][1]}개만 남음!")
-                
-                if worst_comp and worst_comp.get('splits'):
-                    w_guess = worst_comp['guess']
-                    w_splits = worst_comp['splits']
-                    print(f"   [비교] 만약 최악의 수 {w_guess}를 찔렀다면?")
-                    print(f"     └─ 가장 운이 나쁜 [{w_splits[0][0][0]}S {w_splits[0][0][1]}B] 판정 시 ➔ 무려 {w_splits[0][1]}개나 남음.")
-                    
-        elif solver == "HeuristicSolver":
-            # 휴리스틱: 가중치 합산(Score Breakdown) 표기
-            if remains <= 1:
-                print("   (후보군이 1개이므로 연산 스킵)")
-            else:
-                breakdown_strs = []
-                total_score = 0
-                for pos, (p_list, chosen_digit) in enumerate(zip(probs, best_guess)):
-                    # 확률 * 남은 개수 = 해당 자리의 실제 출현 빈도수
-                    score = p_list[chosen_digit] * remains 
-                    total_score += score
-                    breakdown_strs.append(f"{pos+1}번[{chosen_digit}]:{score:.1f}점")
-                
-                formula = " + ".join(breakdown_strs)
-                print(f"   └─ 빈도합산: {formula} = 총 {total_score:.1f}점 (가성비 1위)")
+        if not best_guess:
+            print("▶ [Dash 4] AI의 결정적 근거:")
+            print("   (다음 공격 숫자를 계산 중입니다.)")
         else:
-            print("   (선택 근거 데이터 없음)")
+            print(f"▶ [Dash 4] AI의 결정적 근거 (Why {best_guess}?):")
+            if solver == "EntropySolver" and 'expected_splits' in eval_data:
+                splits = eval_data['expected_splits']
+                worst_comp = eval_data.get('worst_split_comparison', {})
+                if not splits:
+                    print("   (탐색 스킵)")
+                else:
+                    print(f"   [채택] {best_guess}를 찔렀을 때 (엔트로피 최고점):")
+                    print(f"     ├─ 가장 운이 나쁜 [{splits[0][0][0]}S {splits[0][0][1]}B] 판정 시에도 ➔ {splits[0][1]}개만 남음!")
+                    
+                    if worst_comp and worst_comp.get('splits'):
+                        w_guess = worst_comp['guess']
+                        w_splits = worst_comp['splits']
+                        print(f"   [비교] 만약 최악의 수 {w_guess}를 찔렀다면?")
+                        print(f"     └─ 가장 운이 나쁜 [{w_splits[0][0][0]}S {w_splits[0][0][1]}B] 판정 시 ➔ 무려 {w_splits[0][1]}개나 남음.")
+                        
+            elif solver == "HeuristicSolver":
+                # 휴리스틱: 가중치 합산(Score Breakdown) 표기
+                if remains <= 1:
+                    print("   (후보군이 1개이므로 연산 스킵)")
+                else:
+                    breakdown_strs = []
+                    total_score = 0
+                    for pos, (p_list, chosen_digit) in enumerate(zip(probs, best_guess)):
+                        # 확률 * 남은 개수 = 해당 자리의 실제 출현 빈도수
+                        score = p_list[chosen_digit] * remains 
+                        total_score += score
+                        breakdown_strs.append(f"{pos+1}번[{chosen_digit}]:{score:.1f}점")
+                    
+                    formula = " + ".join(breakdown_strs)
+                    print(f"   └─ 빈도합산: {formula} = 총 {total_score:.1f}점 (가성비 1위)")
+            else:
+                print("   (선택 근거 데이터 없음)")
 
        # [Dash 1] 10x4 전치(Transposed) 확률 히트맵
-        print(f"▶ [Dash 1] 자릿수별 확률 히트맵 (%) - [*]는 AI 선택")
+        if not best_guess:
+            print(f"▶ [Dash 1] 갱신된 자릿수별 확률 히트맵 (%)")
+        else:
+            print(f"▶ [Dash 1] 자릿수별 확률 히트맵 (%) - [*]는 AI 선택")
         
         # 헤더 생성 (자릿수가 열)
         header = f" Digit  |  " + " | ".join([f" Pos {i+1:^1} " for i in range(num_pos)]) + " |"
@@ -94,8 +109,8 @@ class CLIDashboard:
                 prob = probs[pos][d]
                 val_str = f"{prob*100:5.1f}" if prob > 0 else "  -  "
                 
-                # AI가 이번 턴에 선택한 숫자면 대괄호[*] 표시
-                if best_guess[pos] == d:
+                # [수정된 부분] best_guess가 비어있지 않을 때만 인덱스 검사 수행
+                if best_guess and best_guess[pos] == d:
                     row_str += f"[{val_str:^7}]|"
                 else:
                     row_str += f" {val_str:^7} |"

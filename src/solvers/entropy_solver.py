@@ -34,6 +34,40 @@ class EntropySolver:
             os.makedirs(self.log_dir)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.log_file = os.path.join(self.log_dir, f"sim_log_{timestamp}.jsonl")
+        self._log_initial_state()
+
+    def _log_initial_state(self):
+        """프로그램 시작 직후 관제 센터를 활성화하기 위한 0턴(초기) 상태를 기록합니다."""
+        total = len(self.candidates)
+        probs = [[0.0] * 10 for _ in range(self.digits)]
+        
+        if total > 0:
+            for cand in self.candidates:
+                for i, digit in enumerate(cand):
+                    probs[i][digit] += 1 / total
+
+        payload = {
+            "turn": 0,
+            "solver_name": self.__class__.__name__,
+            "best_guess": [],  
+            "status": "standby",
+            "dashboard_1_heatmap": {"probabilities": probs},
+            "dashboard_2_trend": {"remaining_count": total},
+            "dashboard_3_evaluation": {
+                "metric_name": "프로그램 초기화 완료 (대기 중)",
+                "top_guesses": [],
+                "expected_splits": [],
+                "worst_split_comparison": {}
+            }
+        }
+        
+        # 파일에 기록하여 웹 대시보드 트리거
+        with open(self.log_file, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + '\n')
+            
+        # CLI 대시보드 트리거
+        if self.observer_callback:
+            self.observer_callback(payload)
 
     def _generate_all_candidates(self):
         # 자릿수, 중복여부, 0시작여부를 조합한 고유 키 생성
@@ -113,6 +147,19 @@ class EntropySolver:
             
         return payload
 
+    def log_state_after_feedback(self, turn, guess):
+        """피드백 직후, 다음 턴에 사용할 최적수를 미리 계산하여 대시보드에 띄웁니다."""
+        # 1. 다음 턴을 위한 준비 (후보군 기반 확률 재계산 등은 get_best_guess 내부에서 수행됨)
+        # 2. 다음 턴(turn + 1)의 최적수를 미리 계산
+        # 이 호출이 자동으로 _extract_dashboard_data를 수행하여 로그를 남기고 대시보드를 갱신합니다.
+        print(f"\n[AI Thinking] 다음 공격(Turn {turn+1})을 위한 최적 경로 분석 중...")
+        
+        # 상태를 'processing'으로 하여 다음 수를 계산하고 리포트를 생성합니다.
+        # 이 메서드 안에서 이미 self.observer_callback(payload)이 호출됩니다.
+        next_best = self.get_best_guess(turn + 1) 
+        
+        return next_best
+    
     def get_best_guess(self, turn):
         """
         [Engineering Note]

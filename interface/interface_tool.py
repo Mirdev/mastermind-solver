@@ -36,10 +36,12 @@ def do_attack(solver, turn, digits):
                         solver.log_game_over(turn, guess, "win")
                     return True
                 solver.update_candidates(guess, (s, b))
+                if hasattr(solver, 'log_state_after_feedback'):
+                    solver.log_state_after_feedback(turn, guess)
                 return False
         print(f"   [!] 잘못된 입력입니다. {digits}자리 이하의 숫자로 '11'처럼 입력하세요.")
 
-def do_defense(engine, my_secret, digits, turn):
+def do_defense(engine, solver, my_secret, digits, turn):
     """상대방의 공격에 대해 피드백을 주는 함수"""
     while True:
         opp_guess_str = input("▷ 상대방이 던진 숫자 입력: ").replace(" ", "")
@@ -50,8 +52,9 @@ def do_defense(engine, my_secret, digits, turn):
             print(f"   => 피드백: **{s} Strike, {b} Ball**")
             if (s, b) == (digits, 0):
                 print(f"\n💀 패배... 상대방이 {turn}회 만에 정답을 맞혔습니다.")
+                guess = solver.get_best_guess(turn)
                 if hasattr(solver, 'log_game_over'):
-                        solver.log_game_over(turn, guess, "lose")
+                    solver.log_game_over(turn, guess, "lose")
                 return True
             break
         print(f"   [!] {digits}자리 숫자를 입력해 주세요.")
@@ -100,9 +103,9 @@ def run_calculator(use_dashboard=False):
         if is_atk_first:
             if do_attack(solver, turn, digits): return
             print("-" * 20)
-            if do_defense(engine, my_secret, digits, turn): return
+            if do_defense(engine, solver, my_secret, digits, turn): return
         else:
-            if do_defense(engine, my_secret, digits, turn): return
+            if do_defense(engine, solver, my_secret, digits, turn): return
             print("-" * 20)
             if do_attack(solver, turn, digits): return
 
