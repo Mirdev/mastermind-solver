@@ -130,9 +130,9 @@ class HeuristicSolver:
         if len(self.candidates) == 1:
             best_guess = self.candidates[0]
         elif self.engine.allow_duplicates == True and turn == 1:
-            best_guess = (1, 2, 3, 4)
+            best_guess = tuple((i % 10) for i in range(1, self.engine.digits + 1))
         elif self.engine.allow_duplicates == True and turn == 2:
-            best_guess = (5, 6, 7, 8)
+            best_guess = tuple(((i + self.engine.digits) % 10) for i in range(1, self.engine.digits + 1))
         else:
             # 위치별 숫자의 빈도 측정
             position_counts = [{} for _ in range(self.engine.digits)]

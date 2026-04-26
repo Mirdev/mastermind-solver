@@ -12,6 +12,7 @@ if root_dir not in sys.path:
 from src.game_engine import MastermindEngine
 from src.solvers.entropy_solver import EntropySolver
 from src.solvers.heuristic_solver import HeuristicSolver
+from src.solvers.fast_entropy_solver import FastEntropySolver
 from interface.cli_dashboard import CLIDashboard  # 대시보드 모듈 추가됨
 
 # --- [정석: 함수를 밖으로 분리] ---
@@ -24,8 +25,15 @@ def do_attack(solver, turn, digits):
     print(f"▶ AI 추천 공격: **{guess}** (계산: {time.time() - start_time:.4f}s)")
     
     while True:
-        fb_input = input("   피드백 입력 (예: 11 / 정답 40 / 스킵 s): ").lower().replace(" ", "")
+        fb_input = input(f"   피드백 입력 (예: 1 1 / 정답 {digits} 0 / 스킵 s): ").lower().strip()
         if fb_input == 's': return False
+        
+        # 띄어쓰기를 기준으로 분리하여 처리
+        parts = fb_input.split()
+        if len(parts) == 2 and all(p.isdigit() for p in parts):
+            s, b = int(parts[0]), int(parts[1])
+            if s + b <= digits:
+                if (s, b) == (digits, 0):
         
         if len(fb_input) == 2 and fb_input.isdigit():
             s, b = int(fb_input[0]), int(fb_input[1])
@@ -75,18 +83,33 @@ def run_calculator(use_dashboard=False):
         digits = int(input("1) 자릿수 (기본 4): ") or 4)
         allow_dup = input("2) 중복 허용? (y/n): ").lower() == 'y'
         allow_zero = input("3) 0으로 시작 허용? (y/n): ").lower() == 'y'
-        solver_choice = input("\n[솔버] 1: Entropy | 2: Heuristic (기본 1): ") or "1"
+        use_lut = input("4) 초고속 LUT 가속 엔진 사용? (y/n): ").lower() == 'y'
+        solver_choice = input("\n[솔버] 1: Entropy | 2: Heuristic | 3: Fast-Entropy (기본 1): ") or "1"
     except ValueError:
-        digits, allow_dup, allow_zero, solver_choice = 4, False, False, "1"
+        digits, allow_dup, allow_zero, use_lut, solver_choice = 4, False, False, False, "1"
 
-    engine = MastermindEngine(digits=digits, allow_duplicates=allow_dup, allow_leading_zero=allow_zero)
+    # [핵심 로직] 4자리 제한 판정 및 엔진 분기
+    if use_lut and digits != 4:
+        print("\n[!] 경고: LUT 가속 엔진은 4자리(Digits=4) 환경에서만 동작합니다.")
+        print("[!] 안전을 위해 기존 일반 엔진(MastermindEngine)으로 자동 전환합니다.")
+        use_lut = False
+
+    if use_lut:
+        from src.lut_engine import MastermindLUTEngine
+        # 파일 부재 시 엔진 내부에서 자체적으로 제네레이터를 호출하여 투명하게 세팅을 마칩니다.
+        engine = MastermindLUTEngine(digits=digits, allow_duplicates=allow_dup, allow_leading_zero=allow_zero)
+        print("\n[System] LUT 가속 엔진이 성공적으로 로드되었습니다.")
+    else:
+        engine = MastermindEngine(digits=digits, allow_duplicates=allow_dup, allow_leading_zero=allow_zero)
 
     # 솔버 생성 시 대시보드 콜백 전달
     callback = dashboard.receive_data if dashboard else None
     if solver_choice == "2":
         solver = HeuristicSolver(engine, observer_callback=callback)
-    else:
+    elif solver_choice == "1":
         solver = EntropySolver(engine, observer_callback=callback)
+    else:
+        solver = FastEntropySolver(engine, observer_callback=callback)
 
     while True:
         my_secret_str = input(f"\n상대방이 맞춰야 할 '당신의 숫자'({digits}자리)를 입력하세요: ").replace(" ", "")
