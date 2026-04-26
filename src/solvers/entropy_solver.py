@@ -195,8 +195,8 @@ class EntropySolver:
                     entropy -= p * math.log2(p)
 
                 eval_list.append((guess, entropy))
-
-            eval_list.sort(key=lambda x: x[1], reverse=True)
+            
+            eval_list.sort(key=lambda x: (round(x[1], 6), random.random()), reverse=True)
             best_guess = eval_list[0][0]
 
         # [핵심 고정] 페이로드를 생성하고 내부에서 로깅까지 완료!
