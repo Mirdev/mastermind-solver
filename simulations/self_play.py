@@ -83,17 +83,24 @@ def run_self_play(use_dashboard=False):
         print(f"▶ 공격수: \"{guess}\" (계산: {step_time:.4f}s)")
         print(f"◁ 수비수: \"{strike}S {ball}B\"")
 
-        time.sleep(1) # slow mode
+        time.sleep(5) # slow mode
 
         # C. 종료 및 업데이트
         if (strike, ball) == (digits, 0):
             print(f"\n🎉 검증 성공! {turn}턴 만에 정답을 찾았습니다.")
+            solver.log_game_over(turn, guess, "win")
+            break
+
+        if turn >= 9:  # 9회 제한 초과 시
+            solver.log_game_over(turn, guess, "lose")
+            print("💀 9턴 제한 도달! (LOSE)")
             break
             
         solver.update_candidates(guess, (strike, ball))
         
         if not solver.candidates:
             print("\n❌ 검증 실패: 로직에 모순이 발생하여 후보군이 소멸했습니다.")
+            solver.log_game_over(turn, guess, "lose")
             break
             
         turn += 1
