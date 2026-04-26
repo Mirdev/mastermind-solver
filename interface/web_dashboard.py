@@ -12,7 +12,7 @@ st.set_page_config(page_title="Mastermind AI 관제 센터", layout="wide")
 st.markdown("<h3 style='text-align: center; margin-top: -30px;'>⚾ Mastermind AI 관제 센터</h3>", unsafe_allow_html=True)
 
 # ==========================================
-# 2. 세션 상태(Session State) 상태머신 엔진
+# 2. 세션 상태머신 엔진
 # ==========================================
 if "live_mode" not in st.session_state:
     st.session_state.live_mode = True
@@ -23,7 +23,6 @@ if "standby" not in st.session_state:
 if "baseline_mtime" not in st.session_state:
     st.session_state.baseline_mtime = None
 
-# --- UI 상호작용 콜백 함수 ---
 def toggle_live():
     if st.session_state.live_mode:
         st.session_state.selected_log = None
@@ -53,7 +52,6 @@ st.sidebar.header("🕹️ Control Panel")
 
 if not log_files:
     st.sidebar.warning("저장된 로그 파일이 없습니다.")
-    st.warning("로그 폴더(logs/)에 JSONL 데이터가 없습니다. 시뮬레이션을 먼저 실행해 주세요.")
     st.stop()
 
 st.sidebar.checkbox("🔴 Live (실시간 모니터링)", key="live_mode", on_change=toggle_live)
@@ -90,20 +88,22 @@ else:
     target_file = log_dir / st.session_state.selected_log
 
 # ==========================================
-# 6. 메인 화면 렌더링 (st.empty 덮어쓰기 기법)
+# 6. 메인 화면 렌더링 (단일 컨테이너 강제 초기화 기법)
 # ==========================================
-# [핵심] 이 빈 공간(placeholder) 하나를 선언하고, 조건에 따라 통째로 갈아 끼웁니다.
-main_container = st.empty()
+# 이 빈 공간 하나만을 창구로 사용하여, 조건이 바뀔 때마다 무조건 다 때려 부수고 새로 짓습니다.
+main_display = st.empty()
 
 if st.session_state.standby:
-    # 대기 모드: 컨테이너 안에 대기 메시지만 덮어씌움 (과거 차트 완벽 소각)
-    with main_container.container():
+    main_display.empty() # 프론트엔드 강제 철거
+    with main_display.container():
         st.markdown("<br><br><br><br>", unsafe_allow_html=True)
         st.info("⏳ **새로운 시뮬레이션이 시작되기를 기다리고 있습니다...**\n\n(백엔드 스크립트를 실행하여 데이터가 기록되는 순간 대시보드가 나타납니다.)")
-
+        # [핵심 방어막] 혹시라도 스트림릿 버그로 이전 차트가 살아남는다면 화면 최하단으로 밀어버립니다.
+        st.markdown("<div style='height: 2000px;'></div>", unsafe_allow_html=True)
+        
 else:
-    # 대시보드 모드: 컨테이너 안에 전체 차트를 덮어씌움
-    with main_container.container():
+    main_display.empty() # 차트를 그리기 전에도 무조건 철거 명령
+    with main_display.container():
         history_data = []
         with open(target_file, 'r', encoding='utf-8') as f:
             for line in f:
@@ -204,5 +204,6 @@ else:
 # 7. 최하단 폴링
 # ==========================================
 if st.session_state.live_mode and auto_refresh:
-    time.sleep(refresh_rate)
+    # 대기 모드일 때는 좀비 화면 방지를 위해 브라우저가 화면을 지울 시간을 넉넉히(1.5초) 줍니다.
+    time.sleep(refresh_rate if not st.session_state.standby else 1.5)
     st.rerun()
