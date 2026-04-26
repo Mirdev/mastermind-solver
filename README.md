@@ -242,8 +242,13 @@ streamlit run interface/web_dashboard.py
 **2) 터미널 B에서 시뮬레이션 실행**
 
 ```bash
-python simulations/self_play.py
+python interface/interface_tool.py [-d]
 ```
+혹은
+```bash
+python simulations/self_play.py [-d]
+```
+
 ### 5. D3.js Dashboard 실행 (실시간 관제)
 **1) 먼저 터미널 A에서 웹 서버 가동**
 
@@ -260,7 +265,11 @@ http://localhost:8000/interface/d3_dashboard.html
 **3) 터미널 B에서 시뮬레이션 실행**
 
 ```bash
-python simulations/self_play.py
+python interface/interface_tool.py [-d]
+```
+혹은
+```bash
+python simulations/self_play.py [-d]
 ```
 
 
