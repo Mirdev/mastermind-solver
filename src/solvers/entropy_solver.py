@@ -166,7 +166,9 @@ class EntropySolver:
         if turn == 1:
             # 중복 허용 시 0011 패턴이 엔트로피 효율이 높고, 중복 불가 시 0123 패턴이 높습니다.
             if self.engine.allow_duplicates:
-                best_guess = tuple(int(d) for d in self.start_digits[:2] + self.start_digits[:2])
+                # 3자리(001), 4자리(0011), 5자리(00112) 등 자릿수에 맞춰 동적 생성
+                pattern = [self.start_digits[i // 2] for i in range(self.digits)]
+                best_guess = tuple(int(d) for d in pattern)
             else:
                 best_guess = tuple(int(d) for d in self.start_digits[:self.digits])
 

@@ -150,7 +150,9 @@ class FastEntropySolver:
         # 1. 1턴 하드코딩 (수학적 상수 반환)
         if not is_lut and turn == 1:
             if self.engine.allow_duplicates:
-                best_guess = tuple(int(d) for d in self.start_digits[:2] + self.start_digits[:2])
+                # 자릿수(self.digits)에 맞춰 동적으로 최적 패턴(AAB, AABB, AABBC 등) 자동 생성
+                pattern = [self.start_digits[i // 2] for i in range(self.digits)]
+                best_guess = tuple(int(d) for d in pattern)
             else:
                 best_guess = tuple(int(d) for d in self.start_digits[:self.digits])
 

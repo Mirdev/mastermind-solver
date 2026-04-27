@@ -6,12 +6,14 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
-        body { margin: 0; padding: 0; background-color: #050914; color: #8ab4f8; font-family: 'Share Tech Mono', monospace; display: flex; height: 100vh; overflow: hidden; box-sizing: border-box; }
+        
+        /* 100vh 대신 100dvh를 사용하여 모바일 주소창 영역을 완벽하게 계산합니다. */
+        body { margin: 0; padding: 0; background-color: #050914; color: #8ab4f8; font-family: 'Share Tech Mono', monospace; display: flex; height: 100dvh; overflow: hidden; box-sizing: border-box; }
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #050914; } ::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 3px; }
         * { box-sizing: inherit; }
         
         /* 히스토리 슬라이드 패널 스타일 적용 */
-        #history-panel { position: fixed; top: 0; left: -200px; width: 200px; height: 100vh; background-color: #080B14; border-right: 1px solid #161F33; transition: left 0.3s ease-in-out; z-index: 1000; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.8); }
+        #history-panel { position: fixed; top: 0; left: -200px; width: 200px; height: 100dvh; background-color: #080B14; border-right: 1px solid #161F33; transition: left 0.3s ease-in-out; z-index: 1000; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.8); }
         #history-panel.history-open { left: 0; }
         .sidebar-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
         .sidebar-content h2 { font-size: 0.95rem; margin: 0; color: #38BDF8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4); text-align: left; border: none; padding: 0;}
@@ -34,13 +36,13 @@
         
         .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; flex: 1; min-height: 0;}
         .chart-container { background: rgba(11, 17, 32, 0.5); border: 1px solid #1E293B; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; box-shadow: inset 0 0 15px rgba(0,0,0,0.6); overflow: hidden;}
-        .chart-title { font-size: 0.8rem; margin: 0 0 5px 0; color: #E2E8F0; border-left: 3px solid #38BDF8; padding-left: 6px; }
+        .chart-title { font-size: 0.8rem; margin: 0 0 5px 0; color: #E2E8F0; border-left: 3px solid #38BDF8; padding-left: 6px; flex-shrink: 0; }
         
         #dash1 { display: flex; gap: 4px; height: 100%; width: 100%; flex: 1;}
         .chamber { flex: 1; position: relative; border-right: 1px solid rgba(30, 41, 59, 0.5); background: rgba(0,0,0,0.1); height: 100%; overflow: hidden;}
         #dash2 { flex: 1; position: relative; overflow: hidden; background: #050810;}
-        #dash3 { display: flex; flex-direction: column; gap: 6px; height: 100%; overflow-y: auto; padding-top: 5px;}
-        #dash4 { display: flex; align-items: center; justify-content: center; gap: 20px; height: 100%;}
+        #dash3 { display: flex; flex-direction: column; gap: 6px; height: 100%; overflow-y: auto; padding-top: 5px; flex: 1; min-height: 0;}
+        #dash4 { display: flex; align-items: center; justify-content: center; gap: 20px; height: 100%; flex: 1; min-height: 0;}
         
         .matrix-text { font-family: 'Share Tech Mono', monospace; letter-spacing: 1px; }
         .split-box { flex: 1; padding: 12px 8px; border: 1px solid; display: flex; flex-direction: column; gap: 3px; font-size: 0.7rem; text-align: center; }
@@ -55,7 +57,7 @@
         @keyframes slideRight { 0% { transform: translateX(30px); opacity: 0; filter: blur(2px); } 100% { transform: translateX(0); opacity: 1; filter: blur(0); } }
         @keyframes pulseVS { 0% { transform: scale(1); text-shadow: none; } 50% { transform: scale(1.2); text-shadow: 0 0 10px #F43F5E; color: #F43F5E; } 100% { transform: scale(1); text-shadow: none; } }
 
-        #control-panel { flex: 1.1; padding: 20px 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); }
+        #control-panel { flex: 1.1; padding: 20px 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); height: 100dvh; }
         h2.panel-title { color: #00f0ff; text-transform: uppercase; letter-spacing: 4px; text-align: center; margin-top: 0; padding-bottom: 15px; font-family: 'Orbitron', sans-serif; border-bottom: 2px solid rgba(0, 240, 255, 0.3); }
         .step-container { display: none; flex-direction: column; gap: 20px; } .step-container.active { display: flex; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
@@ -81,7 +83,6 @@
            [ 컴팩트 화면 대응: 좌우 유지 + 대시보드 1열 4등분 픽스 ]
         ======================================================== */
         @media screen and (max-width: 1024px) {
-            /* 상단 요약 카드 공간 확보를 위한 여백 축소 */
             .metrics-row {
                 flex-wrap: wrap;
                 height: auto;
@@ -92,25 +93,25 @@
                 height: 45px;
             }
 
-            /* 2x2 그리드를 1열로 세우고, 높이를 4등분(25%)으로 강제 고정 */
+            /* 그리드를 1열 종대로 세우고 높이를 컨테이너 안에서 4등분 제한 */
             .dashboard-grid {
                 grid-template-columns: 1fr;
-                grid-template-rows: repeat(4, minmax(0, 1fr)); /* 핵심: 무한 확장을 막는 minmax 제어 */
-                overflow: hidden; /* 그리드 전체 영역 스크롤 방지 */
+                grid-template-rows: repeat(4, minmax(0, 1fr)); 
+                overflow: hidden; /* 영역 밖으로 삐져나가는 것 차단 */
                 padding-right: 0;
                 gap: 8px;
             }
 
-            /* 4등분 된 구역 안에서 차트 컨테이너가 꽉 차게 설정 */
+            /* 4등분 구역 내부에서 높이 100%를 강제하여 dash3가 전체 화면을 밀어내는 것을 방지 */
             .chart-container {
-                min-height: 0; /* 강제 최소 높이 해제 */
+                min-height: 0 !important;
                 height: 100%;
                 padding: 8px;
             }
             
             #dash1, #dash2, #dash3, #dash4 {
-                min-height: 0;
-                height: 100%;
+                flex: 1;
+                min-height: 0 !important;
             }
         }
     </style>
@@ -138,7 +139,7 @@
             <div class="metric-card"><div class="metric-label">Status</div><div class="metric-value" id="m-status">-</div></div>
         </div>
         <div class="dashboard-grid">
-            <div class="chart-container"><h3 class="chart-title">[Dash 1] 확률장 4-Chamber</h3>
+            <div class="chart-container"><h3 class="chart-title" id="dash1-title">[Dash 1] 확률장 4-Chamber</h3>
                 <div id="dash1"></div>
             </div>
             <div class="chart-container"><h3 class="chart-title">[Dash 2] 후보군 붕괴 (Gravity Shatter)</h3><div id="dash2"></div></div>
@@ -268,7 +269,6 @@
             const historyToggleBtn = document.getElementById('history-toggle-btn');
             const toggleArrow = document.getElementById('toggle-arrow');
 
-            // 토글 버튼 클릭 시 패널 열기/닫기
             historyToggleBtn.addEventListener('click', function(e) {
                 historyPanel.classList.toggle('history-open');
                 if (historyPanel.classList.contains('history-open')) {
@@ -276,10 +276,9 @@
                 } else {
                     toggleArrow.innerText = '▶';
                 }
-                e.stopPropagation(); // 이벤트 전파 차단
+                e.stopPropagation(); 
             });
 
-            // 화면의 다른 곳 클릭 시 패널 닫기 (단, 패널 내부 클릭 시 닫히지 않음)
             document.addEventListener('click', function(e) {
                 if (historyPanel.classList.contains('history-open') && !historyPanel.contains(e.target)) {
                     historyPanel.classList.remove('history-open');
@@ -299,7 +298,6 @@
             document.getElementById('ball-sockets').innerHTML = bHtml;
         }
 
-        // 버튼 활성화 상태 및 클릭 이벤트를 제어하는 헬퍼 함수
         function setButtonState(activeId, inactiveId) {
             document.getElementById(activeId).checked = true;
             document.getElementById(inactiveId).checked = false;
@@ -320,27 +318,30 @@
             document.getElementById('opp_guess').maxLength = digits;
             renderFeedbackSockets(digits);
 
-            // 초기화: 모든 제약조건 잠금 해제
+            // [수정] 대시보드 1번 타이틀 동적 업데이트
+            var dash1Title = document.getElementById('dash1-title');
+            if(dash1Title) {
+                dash1Title.innerText = `[Dash 1] 확률장 ${digits}-Chamber`;
+            }
+
             setPointerEvents('lbl_sol_ent', true);
             setPointerEvents('lbl_sol_heu', true);
             setPointerEvents('lbl_lut_o', true);
             setPointerEvents('lbl_lut_x', true);
 
-            // 자릿수별 디폴트 설정 및 락(Lock) 처리
             if (digits === 3) {
                 setButtonState('sol_ent', 'sol_heu');
                 setButtonState('lut_x', 'lut_o');
-                setPointerEvents('lbl_sol_heu', false); // 휴리스틱 변경 불가
-                setPointerEvents('lbl_lut_o', false);   // LUT ON 변경 불가
+                setPointerEvents('lbl_sol_heu', false); 
+                setPointerEvents('lbl_lut_o', false);   
             } else if (digits === 4) {
                 setButtonState('sol_ent', 'sol_heu');
                 setButtonState('lut_o', 'lut_x');
-                // 4자리는 자유롭게 변경 가능 (초기화 외에 별도 락 없음)
             } else if (digits === 5) {
                 setButtonState('sol_heu', 'sol_ent');
                 setButtonState('lut_x', 'lut_o');
-                setPointerEvents('lbl_sol_ent', false); // 엔트로피 변경 불가
-                setPointerEvents('lbl_lut_o', false);   // LUT ON 변경 불가
+                setPointerEvents('lbl_sol_ent', false); 
+                setPointerEvents('lbl_lut_o', false);   
             }
         }
 
