@@ -109,7 +109,6 @@ class HeuristicSolver:
             "dashboard_2_trend": {"remaining_count": total},
             "dashboard_3_evaluation": {
                 "metric_name": "Positional Frequency Score(NB)",
-		# 빈 리스트가 넘어오더라도 에러가 나지 않도록 처리
                 "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list[:5]]
             }
         }
