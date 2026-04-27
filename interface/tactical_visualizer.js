@@ -209,6 +209,7 @@ function renderDash2(history) {
     if (!container) return;
     const w = container.clientWidth, h = container.clientHeight;
     if(w === 0 || h === 0) return;
+    
     const DIVIDER = 1.5; 
     const trueMaxRemains = Number(history[0].dashboard_2_trend?.remaining_count || 1);
     const trueCurrentRemains = Number(history[history.length - 1].dashboard_2_trend?.remaining_count || 1);
@@ -218,6 +219,7 @@ function renderDash2(history) {
     const GRID_COLS = Math.max(1, Math.ceil(TARGET_PIXELS / GRID_ROWS));
     const DRAW_PIXELS = GRID_ROWS * GRID_COLS; 
     const rectW = w / GRID_COLS, rectH = h / GRID_ROWS;
+    
     if (!gridInit) {
         d3.select("#dash2").selectAll("*").remove(); 
         const svg = d3.select("#dash2").append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${w} ${h}`);
@@ -231,11 +233,13 @@ function renderDash2(history) {
         svg.append("g").attr("class", "line-layer");
         gridInit = true; 
     }
+    
     d3.selectAll(".shatter-rect[data-active='false']").interrupt().style("opacity", 0).style("display", "none");
     const activeNodes = d3.selectAll(".shatter-rect[data-active='true']").nodes();
     const visualSurviveRatio = trueCurrentRemains / trueMaxRemains;
     const visualTargetVisible = Math.floor(visualSurviveRatio * DRAW_PIXELS);
     let toShatter = activeNodes.length - visualTargetVisible;
+    
     if (toShatter > 0) {
         d3.shuffle(activeNodes);
         for (let i = 0; i < toShatter; i++) {
@@ -250,15 +254,24 @@ function renderDash2(history) {
             node.transition("moveY").duration(jumpTime).ease(d3.easeCubicOut).attr("y", jumpY).transition().duration(fallTime).ease(d3.easeBounceOut).attr("y", fallY).transition().duration(400).style("opacity", 0).remove();
         }
     }
+    
     const svg = d3.select("#dash2 svg");
     const lineLayer = svg.select(".line-layer");
     lineLayer.selectAll("*").remove();
-    const maxTurn = Math.max(d3.max(history, d=>Number(d.turn)) || 2, 2);
+    
+    // [핵심 수정] 턴 중복 제거: 동일한 턴에 processing과 win 로그가 겹칠 때 수직선이 그려지는 현상 방지
+    const chartData = Object.values(history.reduce((acc, curr) => {
+        if(Number(curr.turn) >= 1) acc[curr.turn] = curr; // 나중에 들어온 최종 결과로 덮어씌움
+        return acc;
+    }, {}));
+
+    const maxTurn = Math.max(d3.max(chartData, d=>Number(d.turn)) || 2, 2);
     const x = d3.scaleLinear().domain([1, maxTurn]).range([15, w-15]);
     const y = d3.scaleLinear().domain([0, trueMaxRemains]).range([h-30, 15]);
     const lineGen = d3.line().x(d => x(Number(d.turn))).y(d => y(Number(d.dashboard_2_trend?.remaining_count || 0))).curve(d3.curveLinear);
-    lineLayer.append("path").datum(history).attr("fill", "none").attr("stroke", "#FFF").attr("stroke-width", 2.5).attr("filter", "drop-shadow(0 0 5px #FFF)").attr("d", lineGen);
-    lineLayer.selectAll("circle").data(history).enter().append("circle").attr("cx", d=>x(Number(d.turn))).attr("cy", d=>y(Number(d.dashboard_2_trend?.remaining_count || 0))).attr("r", 4).attr("fill", "#38BDF8");
+    
+    lineLayer.append("path").datum(chartData).attr("fill", "none").attr("stroke", "#FFF").attr("stroke-width", 2.5).attr("filter", "drop-shadow(0 0 5px #FFF)").attr("d", lineGen);
+    lineLayer.selectAll("circle").data(chartData).enter().append("circle").attr("cx", d=>x(Number(d.turn))).attr("cy", d=>y(Number(d.dashboard_2_trend?.remaining_count || 0))).attr("r", 4).attr("fill", "#38BDF8");
 }
 
 function renderDash3(data, status) {
