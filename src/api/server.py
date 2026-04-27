@@ -1,137 +1,200 @@
-# src/api/server.py
-import sys
-import os
 import uuid
-from typing import Dict, Tuple, Optional
+import json
+import datetime
+from pathlib import Path
+from typing import Dict, Optional
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from fastapi.responses import FileResponse
 
-# 프로젝트 루트 경로 주입
-current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.dirname(current_dir)
-root_dir = os.path.dirname(src_dir)
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
-
-from src.lut_engine import MastermindLUTEngine
 from src.game_engine import MastermindEngine
+from src.lut_engine import MastermindLUTEngine
+from src.solvers.entropy_solver import EntropySolver
+from src.solvers.heuristic_solver import HeuristicSolver
 from src.solvers.fast_entropy_solver import FastEntropySolver
 
-app = FastAPI(
-    title="Mastermind AI Solver API",
-    description="고성능 LUT 및 NumPy 벡터라이제이션이 적용된 숫자야구 AI API입니다.",
-    version="1.0.0"
+app = FastAPI(title="Mastermind AI Tactical API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# 인메모리 세션 저장소 (실제 프로덕션 환경에서는 Redis 등 사용 권장)
-active_sessions: Dict[str, dict] = {}
-
-# --- [Data Models (Pydantic)] ---
 class GameConfig(BaseModel):
+    mode: str = "interactive"
     digits: int = 4
-    allow_duplicates: bool = False
-    allow_leading_zero: bool = True
+    allow_dup: bool = False
+    allow_zero: bool = False
     use_lut: bool = True
+    solver_type: str = "fast_entropy"
+    is_atk_first: bool = True
+    my_secret: Optional[str] = None
 
 class FeedbackInput(BaseModel):
     strike: int
     ball: int
 
-class TurnResponse(BaseModel):
-    session_id: str
-    turn: int
-    guess: Tuple[int, ...]
-    remaining_candidates: int
-    message: str = "success"
+class OpponentGuessInput(BaseModel):
+    guess: str
 
-# --- [API Endpoints] ---
-@app.post("/game/start", response_model=TurnResponse)
+SESSIONS: Dict[str, dict] = {}
+
+def get_session(session_id: str):
+    if session_id not in SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found or expired.")
+    return SESSIONS[session_id]
+
+@app.post("/game/start")
 def start_game(config: GameConfig):
-    """새로운 게임 세션을 초기화하고 AI의 첫 번째 추측을 반환합니다."""
-    
-    # 1. 엔진 세팅
-    if config.use_lut and config.digits == 4:
-        engine = MastermindLUTEngine(
-            digits=config.digits,
-            allow_duplicates=config.allow_duplicates,
-            allow_leading_zero=config.allow_leading_zero
-        )
-    else:
-        engine = MastermindEngine(
-            digits=config.digits,
-            allow_duplicates=config.allow_duplicates,
-            allow_leading_zero=config.allow_leading_zero
-        )
-
-    # 2. 솔버 세팅 (초고속 엔트로피 솔버 고정)
-    solver = FastEntropySolver(engine)
-    
-    # 3. 1턴 연산
-    turn = 1
-    best_guess = solver.get_best_guess(turn)
-    
-    # 4. 세션 발급 및 상태 저장
     session_id = str(uuid.uuid4())
-    active_sessions[session_id] = {
+    
+    if config.use_lut and config.digits == 4:
+        engine = MastermindLUTEngine(config.digits, config.allow_dup, config.allow_zero)
+    else:
+        engine = MastermindEngine(config.digits, config.allow_dup, config.allow_zero)
+        
+    if config.solver_type == "heuristic":
+        solver = HeuristicSolver(engine)
+    else:
+        solver = FastEntropySolver(engine)
+
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_filename = f"sim_log_{timestamp}_{session_id}.jsonl"
+    log_path = log_dir / log_filename
+    solver.log_file = str(log_path)
+    
+    with open(log_path, "a", encoding="utf-8") as f:
+        pass
+        
+    # 무조건 1턴 타겟 연산 (시작 즉시 대시보드 렌더링 보장)
+    guess = solver.get_best_guess(1)
+    
+    # 방어막: 만약 get_best_guess가 로그를 쓰지 않았다면 강제 뼈대 기록
+    if not log_path.exists() or log_path.stat().st_size == 0:
+        init_log = {
+            "turn": 1,
+            "best_guess": guess,
+            "status": "processing",
+            "solver_name": solver.__class__.__name__,
+            "dashboard_2_trend": {"remaining_count": len(solver.candidates)}
+        }
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(init_log) + "\n")
+            
+    session_data = {
+        "engine": engine,
         "solver": solver,
-        "turn": turn,
-        "last_guess": best_guess,
-        "digits": config.digits
+        "config": config,
+        "turn": 1,
+        "current_guess": guess,
+        "history": []
     }
     
-    return TurnResponse(
-        session_id=session_id,
-        turn=turn,
-        guess=best_guess,
-        remaining_candidates=len(solver.candidates),
-        message="Game started successfully."
-    )
-
-@app.post("/game/{session_id}/feedback", response_model=TurnResponse)
-def submit_feedback(session_id: str, feedback: FeedbackInput):
-    """이전 추측에 대한 사용자의 피드백을 받아, 다음 최적의 추측을 반환합니다."""
+    SESSIONS[session_id] = session_data
     
-    if session_id not in active_sessions:
-        raise HTTPException(status_code=404, detail="유효하지 않거나 만료된 세션입니다.")
-        
-    session = active_sessions[session_id]
+    return {
+        "session_id": session_id,
+        "log_file": log_filename,
+        "message": "Engine Initialized.",
+        "turn": 1,
+        "state": "standby",
+        "ai_guess": guess
+    }
+
+@app.post("/game/{session_id}/attack")
+def ai_attack_phase(session_id: str, feedback: FeedbackInput):
+    session = get_session(session_id)
     solver = session["solver"]
+    turn = session["turn"]
+    guess = session.get("current_guess")
     
-    # 1. 정답 처리 (세션 파기)
-    if feedback.strike == session["digits"] and feedback.ball == 0:
-        turn = session["turn"]
-        del active_sessions[session_id]
-        return TurnResponse(
-            session_id=session_id,
-            turn=turn,
-            guess=session["last_guess"],
-            remaining_candidates=1,
-            message=f"Game Over. {turn}턴 만에 정답을 맞혔습니다!"
-        )
+    if not guess:
+        raise HTTPException(status_code=400, detail="AI has not made a guess yet.")
         
-    # 2. 피드백 기반 후보군 축소
-    solver.update_candidates(session["last_guess"], (feedback.strike, feedback.ball))
+    solver.update_candidates(guess, (feedback.strike, feedback.ball))
     
+    # [내 공격 성공] 내가 4S를 맞췄을 때
+    if feedback.strike == session["config"].digits:
+        final_log = {
+            "turn": turn, "best_guess": guess, "status": "win",
+            "solver_name": solver.__class__.__name__,
+            "dashboard_2_trend": {"remaining_count": 1}
+        }
+        with open(solver.log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(final_log) + "\n")
+        return {"state": "game_over", "result": "win", "turn": turn}
+        
     if not solver.candidates:
-        del active_sessions[session_id]
-        raise HTTPException(status_code=400, detail="모순된 피드백입니다. 가능한 정답 후보군이 소멸했습니다.")
+        return {"state": "error", "message": "피드백 모순! 남은 후보군이 0개입니다. Strike/Ball 입력을 확인하세요."}
         
-    # 3. 다음 턴 연산
-    session["turn"] += 1
-    next_guess = solver.get_best_guess(session["turn"])
-    session["last_guess"] = next_guess
-    
-    return TurnResponse(
-        session_id=session_id,
-        turn=session["turn"],
-        guess=next_guess,
-        remaining_candidates=len(solver.candidates)
-    )
+    if turn >= 9:
+        final_log = {
+            "turn": turn, "best_guess": guess, "status": "lose",
+            "solver_name": solver.__class__.__name__,
+            "dashboard_2_trend": {"remaining_count": len(solver.candidates)}
+        }
+        with open(solver.log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(final_log) + "\n")
+        return {"state": "game_over", "result": "lose", "turn": turn}
 
-@app.delete("/game/{session_id}")
-def end_game(session_id: str):
-    """진행 중인 게임 세션을 강제로 종료합니다."""
-    if session_id in active_sessions:
-        del active_sessions[session_id]
-        return {"message": "Session deleted successfully."}
-    raise HTTPException(status_code=404, detail="Session not found.")
+    session["turn"] += 1
+    next_turn = session["turn"]
+    next_guess = solver.get_best_guess(next_turn)
+    session["current_guess"] = next_guess
+
+    return {
+        "state": "ai_attack_turn",
+        "turn": next_turn,
+        "ai_guess": next_guess,
+        "remaining_candidates": len(solver.candidates)
+    }
+
+@app.post("/game/{session_id}/defense")
+def user_defense_phase(session_id: str, opp: OpponentGuessInput):
+    session = get_session(session_id)
+    engine = session["engine"]
+    config = session["config"]
+    
+    if not config.my_secret:
+        raise HTTPException(status_code=400, detail="No secret set.")
+        
+    opp_guess = tuple(int(d) for d in opp.guess)
+    my_secret = tuple(int(d) for d in config.my_secret)
+    s, b = engine.get_feedback(opp_guess, my_secret)
+    
+    # [내 방어 실패] 상대방이 내 숫자를 맞췄을 때
+    if s == config.digits:
+        final_log = {
+            "turn": session["turn"], "best_guess": opp_guess, "status": "lose",
+            "solver_name": session["solver"].__class__.__name__,
+            "dashboard_2_trend": {"remaining_count": 0}
+        }
+        with open(session["solver"].log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(final_log) + "\n")
+            
+    return {
+        "state": "defense_turn",
+        "opponent_guess": opp.guess,
+        "feedback": {"strike": s, "ball": b}
+    }
+
+@app.get("/logs/{file_name}")
+def get_session_log(file_name: str):
+    file_path = Path("logs") / file_name
+    if not file_path.exists():
+        return {"status": "waiting"}
+    return FileResponse(str(file_path), media_type="text/plain")
+
+@app.get("/api/logs")
+def list_logs():
+    log_dir = Path("logs")
+    if not log_dir.exists():
+        return {"files": []}
+    files = sorted(log_dir.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
+    return {"files": [f.name for f in files]}
