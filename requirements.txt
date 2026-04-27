@@ -9,3 +9,6 @@ plotly>=5.18.0
 
 # Numerical Computation (Optional but recommended for data processing)
 numpy>=1.26.0
+
+# api
+uvicorn
