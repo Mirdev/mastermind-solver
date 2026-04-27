@@ -289,7 +289,7 @@ pip install -r requirements.txt
 
 ## How to Run
 
-### **Command OS v2.0 (메인 웹 환경)**
+### \[추천\] **Command OS v2.0 (메인 웹 환경)**
 가장 권장되는 통합 전술 통제 환경입니다. 원활한 통신과 CORS 보안 정책을 준수하기 위해 백엔드 API 서버와 프론트엔드 UI 서버를 각각 띄워야 합니다.
 
 **1) 백엔드 API 서버 가동 (Terminal A)**
@@ -307,6 +307,9 @@ python -m http.server 8080
 ```bash
 http://localhost:8080/interface/command_center.html
 ```
+
+
+### \[기타\]
 
 명령어 뒤에 -d 또는 --dashboard 플래그를 추가하면 심층 시각화 대시보드가 함께 활성화됩니다.
 
