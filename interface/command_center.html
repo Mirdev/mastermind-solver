@@ -10,7 +10,6 @@
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #050914; } ::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 3px; }
         * { box-sizing: inherit; }
         
-        /* [수정됨] 사이드바 폭 축소 (230px -> 180px) */
         .sidebar { width: 180px; background-color: #080B14; padding: 12px; border-right: 1px solid #161F33; display: flex; flex-direction: column; gap: 10px; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.8);}
         .sidebar h2 { font-size: 0.95rem; margin: 0; color: #38BDF8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4); text-align: left; border: none; padding: 0;}
         #file-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; padding-right: 5px;}
@@ -18,8 +17,7 @@
         .log-btn:hover { border-color: #38BDF8; color: #38BDF8;}
         .log-btn.active { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border-color: #38BDF8; box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.2);}
         
-        /* [수정됨] 중앙 캔버스 비율 소폭 축소 (flex 3 -> 2.6) */
-        #d3-canvas-area { flex: 2.9; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); border-right: 2px solid rgba(59, 130, 246, 0.3); }
+        #d3-canvas-area { flex: 2.6; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); border-right: 2px solid rgba(59, 130, 246, 0.3); }
         .header-title { font-size: 1.2rem; font-weight: bold; margin: 0; text-align: center; color: #F8FAFC; letter-spacing: 1px; font-family: 'Orbitron';}
         .metrics-row { display: flex; gap: 10px; height: 60px; flex-shrink: 0;}
         .metric-card { flex: 1; background: rgba(11, 17, 32, 0.7); border: 1px solid #1E293B; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;}
@@ -50,8 +48,7 @@
         @keyframes slideRight { 0% { transform: translateX(30px); opacity: 0; filter: blur(2px); } 100% { transform: translateX(0); opacity: 1; filter: blur(0); } }
         @keyframes pulseVS { 0% { transform: scale(1); text-shadow: none; } 50% { transform: scale(1.2); text-shadow: 0 0 10px #F43F5E; color: #F43F5E; } 100% { transform: scale(1); text-shadow: none; } }
 
-        /* [수정됨] 컨트롤 패널 비율 증가 (flex 1 -> 1.4) 및 패딩 확보 */
-        #control-panel { flex: 1.1; padding: 20px 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); }
+        #control-panel { flex: 1.4; padding: 20px 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); }
         h2.panel-title { color: #00f0ff; text-transform: uppercase; letter-spacing: 4px; text-align: center; margin-top: 0; padding-bottom: 15px; font-family: 'Orbitron', sans-serif; border-bottom: 2px solid rgba(0, 240, 255, 0.3); }
         .step-container { display: none; flex-direction: column; gap: 20px; } .step-container.active { display: flex; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
@@ -69,7 +66,7 @@
         
         #secret-banner { display: none; background: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; padding: 12px; text-align: center; margin-bottom: 20px; color: #f43f5e; font-weight: bold; font-family: 'Orbitron'; letter-spacing: 3px; font-size: 16px; box-shadow: 0 0 15px rgba(244, 63, 94, 0.2); }
 
-        #auto-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 9, 20, 0.6); z-index: 100; backdrop-filter: blur(5px); flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        #auto-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 9, 20, 0.6); z-index: 100; backdrop-filter: blur(3px); flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .spinner { width: 50px; height: 50px; border: 4px solid rgba(56, 189, 248, 0.1); border-radius: 50%; border-top: 4px solid #38BDF8; animation: spin 1s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite; margin-bottom: 20px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
@@ -101,7 +98,7 @@
         </div>
     </div>
 
-    <script src="tactical_visualizer.js"></script>
+    <script src="tactical_visualizer.min.js"></script>
 
     <div id="control-panel">
         <div id="auto-overlay">
@@ -186,7 +183,7 @@
             <div style="text-align: center; color: #f43f5e; font-family: 'Orbitron';">> OPPONENT'S ATTACK TURN <span id="defense-turn" style="color: #fff; font-weight: bold; font-size: 20px;">1</span> <</div>
             <div style="margin-top: 10px;">
                 <div class="label-title">> OPPONENT'S GUESS (상대방이 부른 숫자)</div>
-                <input type="text" id="opp_guess" placeholder="[ _ _ _ _ ]" maxlength="4" style="text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 15px;">
+                <input type="text" id="opp_guess" placeholder="[ _ _ _ _ ]" maxlength="4" style="width: 100%; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 15px;">
             </div>
             <button class="btn-action" id="btn-calc-defense" style="margin-top: 20px; border-color: #f43f5e; color: #f43f5e; width: 100%;" onclick="calculateDefense()">[ CALCULATE IMPACT ]</button>
 
@@ -207,19 +204,19 @@
     </div>
 
     <script>
-        const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
-        let currentSessionId = null;
-        let currentLogFile = null; 
-        
-        let currentMode = "interactive";
-        let isAtkFirst = true;
-        let localTurn = 1;
-        let nextAiGuess = [];
+        // 전역 상태 변수를 var로 선언 (초기화 에러 방지)
+        window.API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
+        var currentSessionId = null;
+        var currentLogFile = null; 
+        var currentMode = "interactive";
+        var isAtkFirst = true;
+        var localTurn = 1;
+        var nextAiGuess = [];
 
         function renderFeedbackSockets(digits) {
-            let sHtml = '', bHtml = '';
-            for(let i=0; i<=digits; i++) {
-                let checked = i===0 ? 'checked' : '';
+            var sHtml = '', bHtml = '';
+            for(var i=0; i<=digits; i++) {
+                var checked = i===0 ? 'checked' : '';
                 sHtml += `<input type="radio" name="strike" id="s${i}" value="${i}" ${checked}><label class="chip-label" for="s${i}">${i}</label>`;
                 bHtml += `<input type="radio" name="ball" id="b${i}" value="${i}" ${checked}><label class="chip-label" for="b${i}">${i}</label>`;
             }
@@ -228,12 +225,12 @@
         }
 
         function handleDigitChange() {
-            const digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
-            const lutOff = document.getElementById('lut_x');
-            const lutOn = document.getElementById('lut_o');
-            const lblLutOn = document.getElementById('lbl_lut_o');
-            const solHeu = document.getElementById('sol_heu');
-            const solEnt = document.getElementById('sol_ent');
+            var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
+            var lutOff = document.getElementById('lut_x');
+            var lutOn = document.getElementById('lut_o');
+            var lblLutOn = document.getElementById('lbl_lut_o');
+            var solHeu = document.getElementById('sol_heu');
+            var solEnt = document.getElementById('sol_ent');
             
             document.getElementById('my_secret').maxLength = digits;
             document.getElementById('opp_guess').maxLength = digits;
@@ -252,17 +249,15 @@
             }
         }
 
-        renderFeedbackSockets(4);
-
         function switchStep(stepId) {
-            document.querySelectorAll('.step-container').forEach(el => el.classList.remove('active'));
-            const target = document.getElementById(stepId);
+            document.querySelectorAll('.step-container').forEach(function(el) { el.classList.remove('active'); });
+            var target = document.getElementById(stepId);
             target.style.animation = 'none'; target.offsetHeight; target.style.animation = null; 
             target.classList.add('active');
         }
 
         function toggleInteractiveOpts() {
-            const isInt = document.getElementById('m_int').checked;
+            var isInt = document.getElementById('m_int').checked;
             document.getElementById('interactive-options').style.display = isInt ? 'block' : 'none';
         }
 
@@ -290,11 +285,11 @@
 
         window.syncControlPanel = function(latest, fileName) {
             currentLogFile = fileName;
-            const parts = fileName.split('_');
+            var parts = fileName.split('_');
             if (parts.length >= 5) currentSessionId = parts[4].replace('.jsonl', '');
 
-            let mySessions = JSON.parse(localStorage.getItem("my_mm_sessions") || "{}");
-            let sessionMeta = mySessions[fileName] || {};
+            var mySessions = JSON.parse(localStorage.getItem("my_mm_sessions") || "{}");
+            var sessionMeta = mySessions[fileName] || {};
             
             if (sessionMeta.secret && sessionMeta.mode === "interactive") {
                 document.getElementById('banner-secret-val').innerText = sessionMeta.secret;
@@ -303,14 +298,13 @@
                 document.getElementById('secret-banner').style.display = "none";
             }
 
-            const remains = Number(latest.dashboard_2_trend?.remaining_count || 1);
-            const turn = Number(latest.turn || 1);
-            let status = latest.status || "processing";
+            var remains = Number(latest.dashboard_2_trend?.remaining_count || 1);
+            var turn = Number(latest.turn || 1);
+            var status = latest.status || "processing";
             if (remains <= 1 && status !== "lose") status = "win";
             else if (turn >= 9 && status !== "win") status = "lose";
 
             if(latest.best_guess) renderFeedbackSockets(latest.best_guess.length);
-
             document.getElementById('auto-overlay').style.display = "none";
 
             if (status === "win") {
@@ -326,38 +320,33 @@
 
         async function runAutoPlayLoop() {
             try {
-                const res = await fetch(`${API_BASE}/game/${currentSessionId}/auto_step`, { method: 'POST' });
-                const data = await res.json();
-
+                var res = await fetch(`${window.API_BASE}/game/${currentSessionId}/auto_step`, { method: 'POST' });
+                var data = await res.json();
                 if (typeof window.refreshLogList === "function") window.refreshLogList();
                 if (typeof window.renderTacticalDisplay === "function") window.renderTacticalDisplay(currentLogFile);
 
                 if (data.state === "error") {
-                    alert(`[시스템 오류]\n${data.message}`);
-                    resetConsole();
+                    alert(`[시스템 오류]\n${data.message}`); resetConsole();
                 } else if (data.state === "game_over") {
-                    setTimeout(() => {
+                    setTimeout(function() {
                         document.getElementById('auto-overlay').style.display = "none";
-                        const isWin = data.result === "win";
+                        var isWin = data.result === "win";
                         showEndScreen(isWin ? "AUTO SIMULATION COMPLETE\n(TARGET HIT)" : "SIMULATION FAILED\n(OUT OF TURNS)", data.turn, isWin);
                     }, 1000);
                 } else {
                     setTimeout(runAutoPlayLoop, 1500);
                 }
-            } catch (err) {
-                alert(`통신 실패: ${err.message}`);
-                resetConsole();
-            }
+            } catch (err) { alert(`통신 실패: ${err.message}`); resetConsole(); }
         }
 
         async function initializeEngine() {
             try {
                 currentMode = document.querySelector('input[name="opt_mode"]:checked').value;
                 isAtkFirst = document.querySelector('input[name="opt_atk"]:checked').value === "ai";
-                const mySecret = document.getElementById('my_secret').value;
+                var mySecret = document.getElementById('my_secret').value;
                 localTurn = 1;
 
-                const payload = {
+                var payload = {
                     mode: currentMode,
                     digits: parseInt(document.querySelector('input[name="opt_digits"]:checked').value),
                     use_lut: document.querySelector('input[name="opt_lut"]:checked').value === "true",
@@ -368,25 +357,24 @@
                     my_secret: mySecret
                 };
 
-                const res = await fetch(`${API_BASE}/game/start`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                var res = await fetch(`${window.API_BASE}/game/start`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
                 
-                const data = await res.json();
+                var data = await res.json();
                 currentSessionId = data.session_id;
                 currentLogFile = data.log_file;
                 nextAiGuess = data.ai_guess;
-                const actualSecret = data.secret;
+                var actualSecret = data.secret;
 
-                if (currentMode === "interactive" && mySecret) {
-                    document.getElementById('banner-secret-val').innerText = mySecret;
+                if (currentMode === "interactive" && actualSecret) {
+                    document.getElementById('banner-secret-val').innerText = actualSecret;
                     document.getElementById('secret-banner').style.display = "block";
                 }
-                
                 if (currentMode === "self_play") {
                     document.getElementById('auto-secret-val').innerText = `[ ${actualSecret.split('').join(' ')} ]`;
                 }
 
-                let mySessions = JSON.parse(localStorage.getItem("my_mm_sessions") || "{}");
+                var mySessions = JSON.parse(localStorage.getItem("my_mm_sessions") || "{}");
                 mySessions[currentLogFile] = { secret: actualSecret, mode: currentMode };
                 localStorage.setItem("my_mm_sessions", JSON.stringify(mySessions));
 
@@ -404,40 +392,33 @@
         }
 
         async function submitFeedback() {
-            const s = parseInt(document.querySelector('input[name="strike"]:checked').value);
-            const b = parseInt(document.querySelector('input[name="ball"]:checked').value);
-            const maxDigits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
+            var s = parseInt(document.querySelector('input[name="strike"]:checked').value);
+            var b = parseInt(document.querySelector('input[name="ball"]:checked').value);
+            var maxDigits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
             if (s + b > maxDigits) { alert(`S와 B의 합이 자릿수(${maxDigits})를 초과할 수 없습니다.`); return; }
-
             try {
-                const res = await fetch(`${API_BASE}/game/${currentSessionId}/attack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strike: s, ball: b }) });
-                const data = await res.json();
-
+                var res = await fetch(`${window.API_BASE}/game/${currentSessionId}/attack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strike: s, ball: b }) });
+                var data = await res.json();
                 if (typeof window.refreshLogList === "function") window.refreshLogList();
                 if (typeof window.renderTacticalDisplay === "function") window.renderTacticalDisplay(currentLogFile);
-
-                if (data.state === "error") {
-                    alert(`[시스템 오류]\n${data.message}`); return; 
-                } else if (data.state === "game_over") {
-                    const isWin = data.result === "win";
+                if (data.state === "error") { alert(`[시스템 오류]\n${data.message}`); return; } 
+                else if (data.state === "game_over") {
+                    var isWin = data.result === "win";
                     showEndScreen(isWin ? "TARGET ACQUIRED\n(YOU WIN!)" : "MISSION FAILED\n(OUT OF TURNS)", data.turn, isWin);
                 } else if (data.state === "ai_attack_turn") {
                     nextAiGuess = data.ai_guess; 
-                    if (isAtkFirst) showDefensePhase();
-                    else { localTurn++; showDefensePhase(); }
+                    if (isAtkFirst) showDefensePhase(); else { localTurn++; showDefensePhase(); }
                 }
             } catch (err) { alert(`통신 실패: ${err.message}`); }
         }
 
         async function calculateDefense() {
-            const guessStr = document.getElementById('opp_guess').value.trim();
-            const digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
+            var guessStr = document.getElementById('opp_guess').value.trim();
+            var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
             if (guessStr.length !== digits) { alert(`정확히 ${digits}자리의 숫자를 입력하세요.`); return; }
-
             try {
-                const res = await fetch(`${API_BASE}/game/${currentSessionId}/defense`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guess: guessStr }) });
-                const data = await res.json();
-                
+                var res = await fetch(`${window.API_BASE}/game/${currentSessionId}/defense`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guess: guessStr }) });
+                var data = await res.json();
                 if (data.state === "defense_turn") {
                     document.getElementById('def-res-s').innerText = data.feedback.strike;
                     document.getElementById('def-res-b').innerText = data.feedback.ball;
@@ -448,16 +429,13 @@
         }
 
         function nextPhaseAfterDefense() {
-            const s = parseInt(document.getElementById('def-res-s').innerText);
-            const digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
-            
+            var s = parseInt(document.getElementById('def-res-s').innerText);
+            var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
             if (s === digits) {
                 if (typeof window.refreshLogList === "function") window.refreshLogList();
-                showEndScreen("MISSION FAILED\n(HACKED BY OPPONENT)", localTurn, false);
-                return;
+                showEndScreen("MISSION FAILED\n(HACKED BY OPPONENT)", localTurn, false); return;
             }
-            if (isAtkFirst) { localTurn++; showAttackPhase(); } 
-            else { showAttackPhase(); }
+            if (isAtkFirst) { localTurn++; showAttackPhase(); } else { showAttackPhase(); }
         }
 
         function resetConsole() { 
@@ -467,6 +445,10 @@
             document.getElementById('auto-overlay').style.display = "none"; 
             switchStep('step-setup'); 
         }
+
+        // 초기화 실행
+        renderFeedbackSockets(4);
+        window.refreshLogList();
     </script>
 </body>
 </html>
