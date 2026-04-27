@@ -1,6 +1,8 @@
+const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
+
 window.renderTacticalDisplay = async function(fileName) {
     try {
-        const response = await fetch(`http://127.0.0.1:8000/logs/${fileName}`);
+        const response = await fetch(`${API_BASE}/logs/${fileName}`);
         const logDataText = await response.text();
         if (logDataText.includes("waiting") || !logDataText.trim()) return; 
         renderAll(logDataText); 
@@ -9,7 +11,7 @@ window.renderTacticalDisplay = async function(fileName) {
 
 window.loadHistoryFile = async function(fileName) {
     try {
-        const response = await fetch(`http://127.0.0.1:8000/logs/${fileName}`);
+        const response = await fetch(`${API_BASE}/logs/${fileName}`);
         const logDataText = await response.text();
         gridInit = false; window.dash1State = null; window.dash3State = null; window.dash4State = null;
         renderAll(logDataText);
@@ -29,7 +31,7 @@ window.loadHistoryFile = async function(fileName) {
 
 window.refreshLogList = async function() {
     try {
-        const res = await fetch('http://127.0.0.1:8000/api/logs');
+        const res = await fetch(`${API_BASE}/api/logs`);
         const data = await res.json();
         const container = document.getElementById('file-list');
         if(!container) return;
