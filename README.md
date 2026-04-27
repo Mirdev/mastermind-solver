@@ -8,7 +8,7 @@
 
 ## Key Features
 
-* **Multi-Tier Architecture (New)**:
+* **Multi-Tier Architecture**:
     * **FastEntropySolver**: 순수 파이썬 루프를 배제하고 NumPy 3차원 브로드캐스팅 및 행렬 교차 연산을 적용하여, 대규모 시뮬레이션에서 압도적인 속도를 자랑하는 벡터라이제이션 솔버입니다.
     * **Entropy Solver**: Shannon Entropy 기반의 표준 솔버. 이론적 최적해를 지향하며 최소 턴 수를 보장합니다.
     * **Heuristic Solver**: 위치별 빈도 분석(Naive Bayesian) 기반으로 연산 비용이 매우 낮아 실시간 처리에 적합합니다.
@@ -25,7 +25,11 @@
     * **Dash 4 (Rationale)**: AI의 결정적 근거 증명. (Entropy: 최악의 수(Max) 방어력을 대조하는 Minimax 스플릿 비교 / Heuristic: 위치별 빈도수 가중치 산식 해체)
     * **Dash 1 (Heatmap)**: 자릿수별 확률 분포와 AI의 실제 선택을 한눈에 파악할 수 있는 10x4 전치(Transposed) 히트맵.
 * **Simulation Logging**: 추후 웹/D3.js 시각화 확장을 대비한 JSONL 형식의 턴별 로그 파일 자동 생성 기능.
-* **D3.js Dashboard** *(new)*: 간단한 streamlit 대시보드에서 화려한 애니메이션이 적용되는 D3.js 대시보드 기능 제공
+* **D3.js Dashboard**: 간단한 streamlit 대시보드에서 화려한 애니메이션이 적용되는 D3.js 대시보드 기능 제공
+* **Tactical Command OS v2.0 (Micro-Frontend Architecture)** *(new)*: 
+    * **FastAPI Backend**: Uvicorn 기반의 비동기 REST API를 구축하여 코어 엔진의 연산과 프론트엔드 시각화를 완벽히 분리(Decoupling).
+    * **Full-Duplex State Machine**: 'AI 선공/후공' 및 '자리수 동적 변경'에 따라 공격 턴과 방어 턴 패널이 교차 전환되는 무결성 상태 머신을 적용.
+    * **VOD History Replay**: 백엔드의 UUID 기반 세션 격리와 브라우저의 `localStorage`를 연동하여, 사용자가 본인의 과거 시뮬레이션 기록만 필터링하여 실시간으로 복기할 수 있는 VOD 시스템을 제공.
 
 ---
 
@@ -47,7 +51,7 @@
 
 ---
 
-## Neural Dashboard UI/UX (The Eyes) (New)
+## Neural Dashboard UI/UX (The Eyes)
 
 단순한 CLI와 streamlit 출력을 넘어, **고도로 정제된 D3.js 애니메이션 인터페이스**를 구현했습니다. AI의 추론 과정을 물리적이고 직관적으로 시각화합니다.
 
@@ -63,6 +67,17 @@
     * **Neural Split & Cross Counter**: AI의 결정적 근거를 증명합니다. 최악의 방어력(Max)을 대조하는 Minimax 스플릿 결과를 좌우에서 중앙으로 꽂히는 슬라이드 임팩트로 연출합니다. 
 
 > **Ghosting Zero UX**: `st.session_state` 및 JS 상태 관리 제어를 통해 라이브 모드 전환 시 이전 차트의 잔상이 남거나 꿀렁이는 현상을 완벽히 차단한 Soft-Update 로직이 적용되어 있습니다.
+
+---
+
+## Tactical Command OS v2.0 & Neural Link
+
+단순한 CLI와 Streamlit을 넘어, **FastAPI + D3.js + Vanilla JS** 조합의 완벽한 마이크로 프론트엔드 아키텍처를 구현했습니다. AI의 추론 과정을 물리적이고 직관적으로 시각화하는 동시에, 실전 대결(인간 vs 인간)을 위한 전술 통제 기능을 제공합니다.
+
+### Command OS (Control Panel)
+* **Operation Mode**: 자가 대결(Auto) 및 실전 대결(Interactive) 모드 동적 전환.
+* **Dynamic Initiative**: 공격(Attack First) 및 방어(Defense First) 턴에 따른 UI 패널 교대 및 턴 동기화.
+* **Secret Encryption**: `localStorage`를 활용하여 사용자의 비밀 숫자를 세션별로 안전하게 암호화 및 보존.
 
 ---
 
@@ -257,6 +272,9 @@
 10. **Physics-based Entropy Visualization**: 단순한 수치 변동을 넘어, 정보 엔트로피가 해소되는 과정을 **D3 물리 엔진(Gravity & Scatter)**으로 형상화했습니다. 후보군이 파괴되어 쏟아지는 연출은 솔버가 불확실성을 제거하는 물리적 과정을 사용자에게 직관적으로 전달합니다.
 11. **True Vectorization & Broadcasting**: `FastEntropySolver`에서는 파이썬의 이중 `for` 루프를 완전히 해체했습니다. NumPy의 `np.ix_`를 활용한 메모리 슬라이싱과 히스토그램 교집합 연산(`np.minimum`) 기반의 3차원 브로드캐스팅을 도입하여 1,500만 번의 검증 루프를 단일 벡터 연산으로 압축했습니다.
 12. **O(1) Look-Up Table (LUT) Caching**: 실시간 연산 오버헤드를 극복하기 위해 `MastermindLUTEngine`을 도입했습니다. 프로그램 구동 시 10,000 x 10,000 크기의 피드백 행렬을 비트 마스킹(Bit-masking) 처리하여 100MB 크기의 `int8` 배열로 메모리에 상주시키며, 이후 모든 판정은 $O(1)$의 단순 참조 연산으로 처리됩니다.
+13. **Session-Isolated Logging via UUID**: 다중 접속 환경의 Race Condition을 방지하기 위해 FastAPI 라우터에서 `uuid4`를 발급하고, 코어 엔진의 수정 없이 속성 덮어씌우기(Attribute Override) 패턴을 적용하여 세션별로 로그 파일을 격리 기록합니다.
+14. **Defensive UI Rendering (Global Kill-switch)**: 비동기 JS 애니메이션 루프와 실시간 데이터 수신 간의 충돌을 방지하기 위해 렌더링 구역별 `Try-Catch` 방어막을 구축하고, 상태 모순 시 조기 차단(Early Return)하는 킬 스위치 로직을 적용했습니다.
+15. **JavaScript Obfuscation**: 프론트엔드의 핵심 자산인 D3.js 시각화 로직(`tactical_visualizer.js`)을 별도 파일로 완전 분리하고 난독화(Obfuscator)를 적용하여 비즈니스 로직 유출을 방어합니다.
 
 ---
 
@@ -270,6 +288,25 @@ pip install -r requirements.txt
 ---
 
 ## How to Run
+
+### **Command OS v2.0 (메인 웹 환경)**
+가장 권장되는 통합 전술 통제 환경입니다. 원활한 통신과 CORS 보안 정책을 준수하기 위해 백엔드 API 서버와 프론트엔드 UI 서버를 각각 띄워야 합니다.
+
+**1) 백엔드 API 서버 가동 (Terminal A)**
+프로젝트 루트 경로에서 Uvicorn을 사용해 FastAPI 서버를 실행합니다.
+```bash
+python -m uvicorn src.api.server:app --host 127.0.0.1 --port 8000
+```
+**2) 프론트엔드 UI 서버 가동 (Terminal B)**
+새로운 터미널을 열고 동일한 프로젝트 루트 경로에서 파이썬 내장 웹 서버를 가동합니다.
+```bash
+python -m http.server 8080
+```
+**3) 웹 브라우저 접속**
+브라우저를 열고 아래 주소로 접속하여 작전을 시작합니다.
+```bash
+http://localhost:8080/interface/command_center.html
+```
 
 명령어 뒤에 -d 또는 --dashboard 플래그를 추가하면 심층 시각화 대시보드가 함께 활성화됩니다.
 
@@ -334,14 +371,20 @@ python simulations/self_play.py [-d]
 ```text
 .
 ├── src/
-│   ├── game_engine.py    # 범용 N자리 피드백 엔진
-│   ├── lut_engine.py     # O(1) 가속 LUT 캐시 엔진 (4자리 전용)
-│   ├── lut_generator.py  # 초기 1억 개 데이터 세팅 스크립트
-│   └── solvers/          # Entropy, FastEntropy, Heuristic 구현체
-├── data/                 # 자동 생성된 .npy 캐시 파일 저장소 (gitignore)
-├── interface/            # CLI, GUI 및 D3.js 기반 대시보드
-├── simulations/          # 벤치마크 및 AI 자가 대결 스크립트
-├── logs/                 # JSONL 시뮬레이션 로그 
+│   ├── api/
+│   │   └── server.py             # FastAPI 백엔드 라우터 및 세션 관리자
+│   ├── game_engine.py            # 범용 N자리 피드백 엔진
+│   ├── lut_engine.py             # O(1) 가속 LUT 캐시 엔진 (4자리 전용)
+│   ├── lut_generator.py          # 초기 1억 개 데이터 세팅 스크립트
+│   └── solvers/                  # Entropy, FastEntropy, Heuristic 구현체
+├── data/                         # 자동 생성된 .npy 캐시 파일 저장소 (gitignore)
+├── interface/                    # CLI, GUI 및 D3.js 기반 대시보드
+│   ├── command_center.html       # Command OS 프론트엔드 UI
+│   ├── tactical_visualizer.min.js# 난독화된 D3.js 시각화 코어 엔진
+│   ├── interface_tool.py         # 레거시 CLI 도구
+│   └── web_dashboard.py          # 레거시 Streamlit 대시보드
+├── simulations/                  # 벤치마크 및 AI 자가 대결 스크립트
+├── logs                          # UUID 및 Timestamp 기반 JSONL 로그 저장소
 └── README.md
 ```
 
