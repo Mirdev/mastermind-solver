@@ -5,6 +5,7 @@ import json
 import os
 from datetime import datetime
 from itertools import permutations, product
+import random
 
 class FastEntropySolver:
     """
@@ -185,7 +186,7 @@ class FastEntropySolver:
                     entropy = -np.sum(p * np.log2(p))
                     eval_list.append((self.candidates[j], float(entropy)))
 
-            eval_list.sort(key=lambda x: x[1], reverse=True)
+            eval_list.sort(key=lambda x: (round(x[1], 6), random.random()), reverse=True)
             best_guess = eval_list[0][0]
 
         payload = self._extract_dashboard_data(turn, best_guess, eval_list, "processing")
