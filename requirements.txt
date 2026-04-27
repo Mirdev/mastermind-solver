@@ -1,14 +1,14 @@
 # Python 3.11.x
 
-# Web Framework & Dashboard
+# Mastermind Tactical API Core
+fastapi
+pydantic
+uvicorn
+
+# Web Framework & Dashboard (Legacy)
 streamlit>=1.31.0
 
 # Data Analysis & Visualization
 pandas>=2.1.0
 plotly>=5.18.0
-
-# Numerical Computation (Optional but recommended for data processing)
 numpy>=1.26.0
-
-# api
-uvicorn
