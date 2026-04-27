@@ -254,6 +254,10 @@
 <img width="1900" height="758" alt="스크린샷 2026-04-26 172342" src="https://github.com/user-attachments/assets/b4ed7e69-2769-4378-8465-0d3a85162c1a" />
 <img width="1904" height="851" alt="Image" src="https://github.com/user-attachments/assets/4e03abb4-f22f-4cc9-a145-1d4f54ccc2fa" />
 
+## Command OS(server-client) example
+<img width="1902" height="849" alt="Image" src="https://github.com/user-attachments/assets/60105f1c-7ea3-4aff-8d6c-1c43a7d0dc54" />
+<img width="1904" height="851" alt="Image" src="https://github.com/user-attachments/assets/a32a492a-7c99-4c82-95be-ffe074f4e26c" />
+
 ---
 
 ## Engineering Note (Fine-tuning)
