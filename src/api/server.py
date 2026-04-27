@@ -72,10 +72,8 @@ def start_game(config: GameConfig):
     with open(log_path, "a", encoding="utf-8") as f:
         pass
         
-    # 무조건 1턴 타겟 연산 (시작 즉시 대시보드 렌더링 보장)
     guess = solver.get_best_guess(1)
     
-    # 방어막: 만약 get_best_guess가 로그를 쓰지 않았다면 강제 뼈대 기록
     if not log_path.exists() or log_path.stat().st_size == 0:
         init_log = {
             "turn": 1,
@@ -87,12 +85,15 @@ def start_game(config: GameConfig):
         with open(log_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(init_log) + "\n")
             
+    secret = tuple(int(d) for d in config.my_secret) if config.my_secret else engine.generate_secret()
+
     session_data = {
         "engine": engine,
         "solver": solver,
         "config": config,
         "turn": 1,
         "current_guess": guess,
+        "secret": secret,
         "history": []
     }
     
@@ -104,7 +105,59 @@ def start_game(config: GameConfig):
         "message": "Engine Initialized.",
         "turn": 1,
         "state": "standby",
-        "ai_guess": guess
+        "ai_guess": guess,
+        "secret": "".join(map(str, secret)) # [핵심 추가] 생성된 비밀 숫자를 프론트엔드로 전달
+    }
+
+# [신규 추가] 자가 대결 턴을 자동으로 넘기는 오토 파일럿 라우터
+@app.post("/game/{session_id}/auto_step")
+def auto_step_phase(session_id: str):
+    session = get_session(session_id)
+    solver = session["solver"]
+    engine = session["engine"]
+    turn = session["turn"]
+    guess = session.get("current_guess")
+    secret = session["secret"]
+    
+    if not guess:
+        raise HTTPException(status_code=400, detail="AI guess missing.")
+        
+    s, b = engine.get_feedback(guess, secret)
+    solver.update_candidates(guess, (s, b))
+    
+    if s == session["config"].digits:
+        final_log = {
+            "turn": turn, "best_guess": guess, "status": "win",
+            "solver_name": solver.__class__.__name__,
+            "dashboard_2_trend": {"remaining_count": 1}
+        }
+        with open(solver.log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(final_log) + "\n")
+        return {"state": "game_over", "result": "win", "turn": turn}
+        
+    if not solver.candidates:
+        return {"state": "error", "message": "모순 발생! 후보군이 없습니다."}
+        
+    if turn >= 9:
+        final_log = {
+            "turn": turn, "best_guess": guess, "status": "lose",
+            "solver_name": solver.__class__.__name__,
+            "dashboard_2_trend": {"remaining_count": len(solver.candidates)}
+        }
+        with open(solver.log_file, "a", encoding="utf-8") as f:
+            f.write(json.dumps(final_log) + "\n")
+        return {"state": "game_over", "result": "lose", "turn": turn}
+
+    session["turn"] += 1
+    next_turn = session["turn"]
+    next_guess = solver.get_best_guess(next_turn)
+    session["current_guess"] = next_guess
+
+    return {
+        "state": "auto_turn",
+        "turn": next_turn,
+        "guess": next_guess,
+        "feedback": {"strike": s, "ball": b}
     }
 
 @app.post("/game/{session_id}/attack")
@@ -119,7 +172,6 @@ def ai_attack_phase(session_id: str, feedback: FeedbackInput):
         
     solver.update_candidates(guess, (feedback.strike, feedback.ball))
     
-    # [내 공격 성공] 내가 4S를 맞췄을 때
     if feedback.strike == session["config"].digits:
         final_log = {
             "turn": turn, "best_guess": guess, "status": "win",
@@ -168,7 +220,6 @@ def user_defense_phase(session_id: str, opp: OpponentGuessInput):
     my_secret = tuple(int(d) for d in config.my_secret)
     s, b = engine.get_feedback(opp_guess, my_secret)
     
-    # [내 방어 실패] 상대방이 내 숫자를 맞췄을 때
     if s == config.digits:
         final_log = {
             "turn": session["turn"], "best_guess": opp_guess, "status": "lose",

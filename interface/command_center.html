@@ -10,14 +10,16 @@
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #050914; } ::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 3px; }
         * { box-sizing: inherit; }
         
-        .sidebar { width: 230px; background-color: #080B14; padding: 15px; border-right: 1px solid #161F33; display: flex; flex-direction: column; gap: 10px; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.8);}
-        .sidebar h2 { font-size: 1rem; margin: 0; color: #38BDF8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4); text-align: left; border: none; padding: 0;}
+        /* [수정됨] 사이드바 폭 축소 (230px -> 180px) */
+        .sidebar { width: 180px; background-color: #080B14; padding: 12px; border-right: 1px solid #161F33; display: flex; flex-direction: column; gap: 10px; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.8);}
+        .sidebar h2 { font-size: 0.95rem; margin: 0; color: #38BDF8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4); text-align: left; border: none; padding: 0;}
         #file-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; padding-right: 5px;}
         .log-btn { background: #0A0F1C; color: #94A3B8; border: 1px solid #161F33; padding: 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; text-align: left; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .log-btn:hover { border-color: #38BDF8; color: #38BDF8;}
         .log-btn.active { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border-color: #38BDF8; box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.2);}
         
-        #d3-canvas-area { flex: 3; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); border-right: 2px solid rgba(59, 130, 246, 0.3); }
+        /* [수정됨] 중앙 캔버스 비율 소폭 축소 (flex 3 -> 2.6) */
+        #d3-canvas-area { flex: 2.9; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); border-right: 2px solid rgba(59, 130, 246, 0.3); }
         .header-title { font-size: 1.2rem; font-weight: bold; margin: 0; text-align: center; color: #F8FAFC; letter-spacing: 1px; font-family: 'Orbitron';}
         .metrics-row { display: flex; gap: 10px; height: 60px; flex-shrink: 0;}
         .metric-card { flex: 1; background: rgba(11, 17, 32, 0.7); border: 1px solid #1E293B; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;}
@@ -48,23 +50,28 @@
         @keyframes slideRight { 0% { transform: translateX(30px); opacity: 0; filter: blur(2px); } 100% { transform: translateX(0); opacity: 1; filter: blur(0); } }
         @keyframes pulseVS { 0% { transform: scale(1); text-shadow: none; } 50% { transform: scale(1.2); text-shadow: 0 0 10px #F43F5E; color: #F43F5E; } 100% { transform: scale(1); text-shadow: none; } }
 
-        #control-panel { flex: 1; padding: 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); }
+        /* [수정됨] 컨트롤 패널 비율 증가 (flex 1 -> 1.4) 및 패딩 확보 */
+        #control-panel { flex: 1.1; padding: 20px 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); }
         h2.panel-title { color: #00f0ff; text-transform: uppercase; letter-spacing: 4px; text-align: center; margin-top: 0; padding-bottom: 15px; font-family: 'Orbitron', sans-serif; border-bottom: 2px solid rgba(0, 240, 255, 0.3); }
         .step-container { display: none; flex-direction: column; gap: 20px; } .step-container.active { display: flex; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         .label-title { color: #60a5fa; font-weight: bold; margin-bottom: 8px; font-size: 12px; }
-        .chip-group { display: flex; gap: 8px; justify-content: center; } .chip-group input[type="radio"] { display: none; }
-        .chip-label { flex: 1; text-align: center; padding: 10px 5px; background: rgba(30, 58, 138, 0.1); color: #4b5563; border: 1px solid #1f2937; border-radius: 2px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .chip-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; } .chip-group input[type="radio"] { display: none; }
+        .chip-label { flex: 1; text-align: center; padding: 10px 5px; background: rgba(30, 58, 138, 0.1); color: #4b5563; border: 1px solid #1f2937; border-radius: 2px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; }
         .chip-label:hover { border-color: #3b82f6; color: #93c5fd; }
         input[name^="opt_"]:checked + .chip-label, input[name="strike"]:checked + .chip-label, input[name="ball"]:checked + .chip-label { background: rgba(0, 240, 255, 0.15); color: #00f0ff; border-color: #00f0ff; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
         .btn-action { background-color: transparent; color: #00f0ff; border: 1px solid #00f0ff; padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: 'Orbitron'; }
         .btn-action:hover { background-color: rgba(0, 240, 255, 0.1); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
         .target-display { text-align: center; color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.5); padding: 20px; font-size: 32px; font-weight: bold; letter-spacing: 12px; font-family: 'Orbitron'; }
         
-        input[type="text"], input[type="number"] { background: rgba(0, 0, 0, 0.5); color: #00f0ff; border: 1px solid #1f2937; padding: 12px; font-family: 'Orbitron', sans-serif; outline: none; transition: 0.3s; }
+        input[type="text"], input[type="number"] { background: rgba(0, 0, 0, 0.5); color: #00f0ff; border: 1px solid #1f2937; padding: 12px; font-family: 'Orbitron', sans-serif; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
         input[type="text"]:focus { border-color: #00f0ff; box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
         
         #secret-banner { display: none; background: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; padding: 12px; text-align: center; margin-bottom: 20px; color: #f43f5e; font-weight: bold; font-family: 'Orbitron'; letter-spacing: 3px; font-size: 16px; box-shadow: 0 0 15px rgba(244, 63, 94, 0.2); }
+
+        #auto-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 9, 20, 0.6); z-index: 100; backdrop-filter: blur(5px); flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(56, 189, 248, 0.1); border-radius: 50%; border-top: 4px solid #38BDF8; animation: spin 1s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite; margin-bottom: 20px; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -94,9 +101,16 @@
         </div>
     </div>
 
-    <script src="tactical_visualizer.min.js"></script>
+    <script src="tactical_visualizer.js"></script>
 
     <div id="control-panel">
+        <div id="auto-overlay">
+            <div class="spinner"></div>
+            <div style="color: #38BDF8; font-family: 'Orbitron'; font-size: 18px; letter-spacing: 2px;">REAL-TIME SIMULATING...</div>
+            <div style="color: #10B981; font-family: 'Orbitron'; font-size: 16px; margin-top: 15px; letter-spacing: 3px; background: rgba(16,185,129,0.1); padding: 8px 20px; border-radius: 4px; border: 1px solid #10B981;">TARGET SECRET : <span id="auto-secret-val" style="color:#FFF;"></span></div>
+            <div style="color: #94A3B8; font-size: 12px; margin-top: 15px;">자가 대결 연산 중입니다. 좌측 패널을 확인하세요.</div>
+        </div>
+
         <h2 class="panel-title">COMMAND OS</h2>
         
         <div id="secret-banner">> MY SECRET : <span id="banner-secret-val" style="color: #fff; text-shadow: 0 0 10px #fff;"></span> <</div>
@@ -147,9 +161,9 @@
                     <input type="radio" name="opt_atk" id="atk_ai" value="ai" checked><label class="chip-label" for="atk_ai">ATTACK FIRST</label>
                     <input type="radio" name="opt_atk" id="atk_me" value="me"><label class="chip-label" for="atk_me">DEFENSE FIRST</label>
                 </div>
-                <div style="margin-top: 15px;"><div class="label-title">> MY SECRET KEY</div><input type="text" id="my_secret" placeholder="[ _ _ _ _ ]" maxlength="4" style="width: 100%; text-align: center; font-size: 20px; letter-spacing: 10px;"></div>
+                <div style="margin-top: 15px;"><div class="label-title">> MY SECRET KEY</div><input type="text" id="my_secret" placeholder="[ _ _ _ _ ]" maxlength="4" style="text-align: center; font-size: 20px; letter-spacing: 10px;"></div>
             </div>
-            <button class="btn-action" style="margin-top: 20px;" onclick="initializeEngine()">[ INITIALIZE SEQUENCE ]</button>
+            <button class="btn-action" style="margin-top: 20px; width: 100%;" onclick="initializeEngine()">[ INITIALIZE SEQUENCE ]</button>
         </div>
 
         <div id="step-attack" class="step-container">
@@ -165,16 +179,16 @@
                 <div class="chip-group" id="ball-sockets"></div>
             </div>
             
-            <button class="btn-action" style="margin-top: 20px;" onclick="submitFeedback()">[ TRANSMIT FEEDBACK ]</button>
+            <button class="btn-action" style="margin-top: 20px; width: 100%;" onclick="submitFeedback()">[ TRANSMIT FEEDBACK ]</button>
         </div>
 
         <div id="step-defense" class="step-container">
             <div style="text-align: center; color: #f43f5e; font-family: 'Orbitron';">> OPPONENT'S ATTACK TURN <span id="defense-turn" style="color: #fff; font-weight: bold; font-size: 20px;">1</span> <</div>
             <div style="margin-top: 10px;">
                 <div class="label-title">> OPPONENT'S GUESS (상대방이 부른 숫자)</div>
-                <input type="text" id="opp_guess" placeholder="[ _ _ _ _ ]" maxlength="4" style="width: 100%; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 15px;">
+                <input type="text" id="opp_guess" placeholder="[ _ _ _ _ ]" maxlength="4" style="text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 15px;">
             </div>
-            <button class="btn-action" id="btn-calc-defense" style="margin-top: 20px; border-color: #f43f5e; color: #f43f5e;" onclick="calculateDefense()">[ CALCULATE IMPACT ]</button>
+            <button class="btn-action" id="btn-calc-defense" style="margin-top: 20px; border-color: #f43f5e; color: #f43f5e; width: 100%;" onclick="calculateDefense()">[ CALCULATE IMPACT ]</button>
 
             <div id="defense-result-box" style="display: none; margin-top: 15px; text-align: center; border: 1px solid #10b981; padding: 20px; background: rgba(16, 185, 129, 0.1);">
                 <div style="color: #10b981; font-weight: bold; margin-bottom: 15px; letter-spacing: 2px;">> SYSTEM FEEDBACK <</div>
@@ -186,7 +200,7 @@
 
         <div id="step-end" class="step-container">
             <div style="text-align: center; color: #f59e0b; font-family: 'Orbitron'; font-size: 18px; font-weight: bold; letter-spacing: 2px;">> OPERATION COMPLETE <</div>
-            <div id="end-result" style="text-align: center; font-size: 24px; font-weight: 900; color: #fff; margin: 20px 0; text-shadow: 0 0 15px rgba(255,255,255,0.5); font-family: 'Orbitron'; line-height: 1.5;">WIN</div>
+            <div id="end-result" style="text-align: center; font-size: 28px; font-weight: 900; color: #fff; margin: 20px 0; text-shadow: 0 0 15px rgba(255,255,255,0.5); font-family: 'Orbitron'; line-height: 1.5;">WIN</div>
             <div style="text-align: center; color: #94A3B8; font-size: 14px;">TOTAL ELAPSED TURNS : <span id="end-turns" style="color: #38BDF8; font-size: 24px; font-weight: bold;">0</span></div>
             <button class="btn-action" style="margin-top: 30px; width: 100%; border-color: #38BDF8; color: #38BDF8;" onclick="resetConsole()">[ DO YOU WANNA REPLAY? ]</button>
         </div>
@@ -282,7 +296,7 @@
             let mySessions = JSON.parse(localStorage.getItem("my_mm_sessions") || "{}");
             let sessionMeta = mySessions[fileName] || {};
             
-            if (sessionMeta.secret) {
+            if (sessionMeta.secret && sessionMeta.mode === "interactive") {
                 document.getElementById('banner-secret-val').innerText = sessionMeta.secret;
                 document.getElementById('secret-banner').style.display = "block";
             } else {
@@ -297,6 +311,8 @@
 
             if(latest.best_guess) renderFeedbackSockets(latest.best_guess.length);
 
+            document.getElementById('auto-overlay').style.display = "none";
+
             if (status === "win") {
                 showEndScreen("TARGET ACQUIRED\n(YOU WIN!)", turn, true);
             } else if (status === "lose") {
@@ -307,6 +323,32 @@
                 showAttackPhase(); 
             }
         };
+
+        async function runAutoPlayLoop() {
+            try {
+                const res = await fetch(`${API_BASE}/game/${currentSessionId}/auto_step`, { method: 'POST' });
+                const data = await res.json();
+
+                if (typeof window.refreshLogList === "function") window.refreshLogList();
+                if (typeof window.renderTacticalDisplay === "function") window.renderTacticalDisplay(currentLogFile);
+
+                if (data.state === "error") {
+                    alert(`[시스템 오류]\n${data.message}`);
+                    resetConsole();
+                } else if (data.state === "game_over") {
+                    setTimeout(() => {
+                        document.getElementById('auto-overlay').style.display = "none";
+                        const isWin = data.result === "win";
+                        showEndScreen(isWin ? "AUTO SIMULATION COMPLETE\n(TARGET HIT)" : "SIMULATION FAILED\n(OUT OF TURNS)", data.turn, isWin);
+                    }, 1000);
+                } else {
+                    setTimeout(runAutoPlayLoop, 1500);
+                }
+            } catch (err) {
+                alert(`통신 실패: ${err.message}`);
+                resetConsole();
+            }
+        }
 
         async function initializeEngine() {
             try {
@@ -333,14 +375,19 @@
                 currentSessionId = data.session_id;
                 currentLogFile = data.log_file;
                 nextAiGuess = data.ai_guess;
+                const actualSecret = data.secret;
 
                 if (currentMode === "interactive" && mySecret) {
                     document.getElementById('banner-secret-val').innerText = mySecret;
                     document.getElementById('secret-banner').style.display = "block";
                 }
+                
+                if (currentMode === "self_play") {
+                    document.getElementById('auto-secret-val').innerText = `[ ${actualSecret.split('').join(' ')} ]`;
+                }
 
                 let mySessions = JSON.parse(localStorage.getItem("my_mm_sessions") || "{}");
-                mySessions[currentLogFile] = { secret: mySecret, mode: currentMode };
+                mySessions[currentLogFile] = { secret: actualSecret, mode: currentMode };
                 localStorage.setItem("my_mm_sessions", JSON.stringify(mySessions));
 
                 if (typeof window.refreshLogList === "function") window.refreshLogList();
@@ -350,7 +397,8 @@
                     if (isAtkFirst) showAttackPhase();
                     else showDefensePhase();
                 } else {
-                    showAttackPhase(); 
+                    document.getElementById('auto-overlay').style.display = "flex"; 
+                    setTimeout(runAutoPlayLoop, 1500); 
                 }
             } catch (err) { alert(`연결 실패: ${err.message}`); }
         }
@@ -375,12 +423,8 @@
                     showEndScreen(isWin ? "TARGET ACQUIRED\n(YOU WIN!)" : "MISSION FAILED\n(OUT OF TURNS)", data.turn, isWin);
                 } else if (data.state === "ai_attack_turn") {
                     nextAiGuess = data.ai_guess; 
-                    if (currentMode === "interactive") {
-                        if (isAtkFirst) showDefensePhase();
-                        else { localTurn++; showDefensePhase(); }
-                    } else {
-                        localTurn++; showAttackPhase();
-                    }
+                    if (isAtkFirst) showDefensePhase();
+                    else { localTurn++; showDefensePhase(); }
                 }
             } catch (err) { alert(`통신 실패: ${err.message}`); }
         }
@@ -420,6 +464,7 @@
             currentSessionId = null; currentLogFile = null; 
             document.getElementById('opp_guess').value = "";
             document.getElementById('secret-banner').style.display = "none"; 
+            document.getElementById('auto-overlay').style.display = "none"; 
             switchStep('step-setup'); 
         }
     </script>
