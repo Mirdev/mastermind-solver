@@ -15,14 +15,16 @@
         #history-panel.history-open { left: 0; }
         .sidebar-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
         .sidebar-content h2 { font-size: 0.95rem; margin: 0; color: #38BDF8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4); text-align: left; border: none; padding: 0;}
-        #history-toggle-btn { position: absolute; top: 20px; right: -30px; transform: translateY(-50%); width: 30px; height: 60px; background-color: #1E293B; color: #38BDF8; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 0 8px 8px 0; border: 1px solid #161F33; border-left: none; box-shadow: 2px 0 5px rgba(0,0,0,0.5); z-index: 1001; }
+        
+        /* 화살표 위치 맨 위로 이동 */
+        #history-toggle-btn { position: absolute; top: 20px; right: -30px; width: 30px; height: 60px; background-color: #1E293B; color: #38BDF8; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 0 8px 8px 0; border: 1px solid #161F33; border-left: none; box-shadow: 2px 0 5px rgba(0,0,0,0.5); z-index: 1001; }
         
         #file-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; padding-right: 5px;}
         .log-btn { background: #0A0F1C; color: #94A3B8; border: 1px solid #161F33; padding: 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; text-align: left; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .log-btn:hover { border-color: #38BDF8; color: #38BDF8;}
         .log-btn.active { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border-color: #38BDF8; box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.2);}
         
-        #d3-canvas-area { flex: 2.9; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); border-right: 2px solid rgba(59, 130, 246, 0.3); margin-left: 0; /* 패널 분리로 여백 제거 */ }
+        #d3-canvas-area { flex: 2.9; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); border-right: 2px solid rgba(59, 130, 246, 0.3); margin-left: 0; }
         .header-title { font-size: 1.2rem; font-weight: bold; margin: 0; text-align: center; color: #F8FAFC; letter-spacing: 1px; font-family: 'Orbitron';}
         .metrics-row { display: flex; gap: 10px; height: 60px; flex-shrink: 0;}
         .metric-card { flex: 1; background: rgba(11, 17, 32, 0.7); border: 1px solid #1E293B; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;}
@@ -76,35 +78,40 @@
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
         /* ========================================================
-           [ 컴팩트 화면 대응: 좌우 유지 + 대시보드 1열 스크롤 ]
-           화면 너비가 1024px 이하일 때 발동합니다.
+           [ 컴팩트 화면 대응: 좌우 유지 + 대시보드 1열 4등분 픽스 ]
         ======================================================== */
         @media screen and (max-width: 1024px) {
-            /* 1. 상단 요약 카드(Metrics)가 좁아질 때 찌그러지지 않게 줄바꿈 허용 */
+            /* 상단 요약 카드 공간 확보를 위한 여백 축소 */
             .metrics-row {
                 flex-wrap: wrap;
                 height: auto;
-                gap: 5px;
+                gap: 4px;
             }
             .metric-card {
-                flex: 1 1 30%; /* 공간이 부족하면 알아서 다음 줄로 넘어감 */
-                height: 55px;
+                flex: 1 1 30%;
+                height: 45px;
             }
 
-            /* 2. 2x2 대시보드를 1열(1x4)로 스택하고 내부 스크롤 생성 */
+            /* 2x2 그리드를 1열로 세우고, 높이를 4등분(25%)으로 강제 고정 */
             .dashboard-grid {
-                grid-template-columns: 1fr; /* 1열로 강제 */
-                grid-template-rows: auto;
-                overflow-y: auto; /* 1열로 쌓인 차트들을 위아래로 스크롤 허용 */
-                padding-right: 8px; /* 스크롤바가 차트를 가리지 않게 여백 추가 */
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, minmax(0, 1fr)); /* 핵심: 무한 확장을 막는 minmax 제어 */
+                overflow: hidden; /* 그리드 전체 영역 스크롤 방지 */
+                padding-right: 0;
+                gap: 8px;
             }
 
-            /* 3. 1열로 바뀔 때 각 차트가 너무 납작해지지 않도록 최소 높이 보장 */
+            /* 4등분 된 구역 안에서 차트 컨테이너가 꽉 차게 설정 */
             .chart-container {
-                min-height: 280px; 
+                min-height: 0; /* 강제 최소 높이 해제 */
+                height: 100%;
+                padding: 8px;
             }
-            #dash1 { min-height: 280px; }
-            #dash2 { min-height: 280px; }
+            
+            #dash1, #dash2, #dash3, #dash4 {
+                min-height: 0;
+                height: 100%;
+            }
         }
     </style>
 </head>
