@@ -123,7 +123,7 @@ class FastEntropySolver:
             "dashboard_2_trend": {"remaining_count": total},
             "dashboard_3_evaluation": {
                 "metric_name": "Shannon Entropy (bits)",
-                "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list[:5]],
+                "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list],
                 "expected_splits": sorted_splits,
                 "worst_split_comparison": { 
                     "guess": list(worst_guess) if worst_guess else [],

@@ -118,18 +118,43 @@ function renderAll(text) {
 function renderDash1(data, status) {
     const probs = data.dashboard_1_heatmap?.probabilities;
     if (!probs) return;
-    const colors = ["#F43F5E", "#38BDF8", "#10B981", "#F59E0B"];
-    if (!window.dash1State) window.dash1State = { turn: -1, chambers: [{},{},{},{}] };
+    
+    const digitsCount = probs.length; // 3, 4, 5 동적 할당
+    // 5자리 이상을 대비한 여유 색상 추가
+    const colors = ["#F43F5E", "#38BDF8", "#10B981", "#F59E0B", "#A855F7", "#EAB308"];
+    
+    const container = document.getElementById('dash1');
+    if (!container) return;
+
+    // 자릿수 변경 감지 시 DOM 새로 그리기
+    if (container.children.length !== digitsCount) {
+        container.innerHTML = "";
+        for (let i = 0; i < digitsCount; i++) {
+            const div = document.createElement('div');
+            div.className = 'chamber';
+            div.id = `ch${i}`;
+            container.appendChild(div);
+        }
+        window.dash1State = null; // 상태 초기화
+    }
+
+    if (!window.dash1State) {
+        window.dash1State = { turn: -1, chambers: Array.from({length: digitsCount}, () => ({})) };
+    }
+    
     const isNewTurn = window.dash1State.turn !== data.turn;
     window.dash1State.turn = data.turn;
+    
     probs.forEach((posProbs, i) => {
         let ch = window.dash1State.chambers[i];
         const c = document.getElementById(`ch${i}`); 
         if (!c) return; 
         const w = c.clientWidth, h = c.clientHeight;
         if (w === 0 || h === 0) return;
+        
+        // 챔버 초기 세팅
         if (!ch.initialized) {
-            c.innerHTML = '<div style="position:absolute; top:4px; left:6px; font-size:0.55rem; color:#475569; z-index:5;">POS '+(i+1)+'</div>';
+            c.innerHTML = `<div style="position:absolute; top:4px; left:6px; font-size:0.55rem; color:#475569; z-index:5;">POS ${i+1}</div>`;
             const svg = d3.select(c).append("svg").attr("width", "100%").attr("height", "100%");
             const defs = svg.append("defs");
             ch.clipNewId = `clip-new-ch${i}`; ch.clipOldId = `clip-old-ch${i}`;
@@ -139,14 +164,19 @@ function renderDash1(data, status) {
             ch.y = d3.scalePoint().domain(d3.range(10)).range([15, h-15]);
             if (i === 0) svg.append("g").attr("transform", "translate(22,0)").call(d3.axisLeft(ch.y).tickSize(2));
             const gOld = svg.append("g").attr("clip-path", `url(#${ch.clipOldId})`);
-            ch.pathOld = gOld.append("path").attr("fill", "none").attr("stroke-width", 2).attr("filter", "drop-shadow(0 0 3px currentColor)").attr("stroke", colors[i]);
+            
+            // 색상을 순환해서 사용 (colors[i % colors.length])
+            const chamberColor = colors[i % colors.length];
+            ch.pathOld = gOld.append("path").attr("fill", "none").attr("stroke-width", 2).attr("filter", "drop-shadow(0 0 3px currentColor)").attr("stroke", chamberColor);
             ch.laserOld = gOld.append("line").attr("stroke-width", 1.5).attr("stroke-dasharray", "3,3").attr("filter", "drop-shadow(0 0 4px #FFF)").attr("stroke", "#FFF").style("display", "none");
             const gNew = svg.append("g").attr("clip-path", `url(#${ch.clipNewId})`);
-            ch.pathNew = gNew.append("path").attr("fill", "none").attr("stroke-width", 2).attr("filter", "drop-shadow(0 0 3px currentColor)").attr("stroke", colors[i]);
+            ch.pathNew = gNew.append("path").attr("fill", "none").attr("stroke-width", 2).attr("filter", "drop-shadow(0 0 3px currentColor)").attr("stroke", chamberColor);
             ch.laserNew = gNew.append("line").attr("stroke-width", 1.5).attr("stroke-dasharray", "3,3").attr("filter", "drop-shadow(0 0 4px #FFF)").attr("stroke", "#FFF").style("display", "none");
             ch.scanner = d3.select(c).append("div").style("position", "absolute").style("width", "100%").style("height", "2px").style("background", "rgba(56, 189, 248, 0.8)").style("box-shadow", "0 0 15px #38BDF8, 0 0 5px #FFF").style("pointer-events", "none").style("top", "0px").style("opacity", 0);
             ch.svg = svg; ch.w = w; ch.h = h; ch.initialized = true;
         }
+        
+        // 애니메이션 및 렌더링
         if (isNewTurn) {
             if (!('currProbs' in ch)) { ch.currProbs = posProbs; ch.currGuess = data.best_guess ? data.best_guess[i] : null; }
             ch.prevProbs = ch.currProbs; ch.prevGuess = ch.currGuess; ch.currProbs = posProbs; ch.currGuess = data.best_guess ? data.best_guess[i] : null;
@@ -235,9 +265,14 @@ function renderDash3(data, status) {
     if (!window.dash3State) window.dash3State = { turn: -1, status: '' };
     const container = document.getElementById("dash3");
     if (!container) return;
-    window.dash3State.turn = data.turn; window.dash3State.status = status;
+    
+    window.dash3State.turn = data.turn; 
+    window.dash3State.status = status;
+    
     let topPicks = data.dashboard_3_evaluation?.top_guesses || [];
     if (topPicks.length === 0 && data.best_guess) topPicks = [{ guess: data.best_guess, score: 100 }];
+    
+    // 승리 시 연출
     if(status === 'win' || Number(data.dashboard_2_trend?.remaining_count) <= 1) {
         if (data.best_guess) {
             container.innerHTML = `<div style="display:flex; align-items:center; gap:10px; font-size:0.75rem; margin-bottom:2px;">
@@ -248,15 +283,29 @@ function renderDash3(data, status) {
             runMatrixEffect(); return;
         }
     }
-    container.innerHTML = "";
-    const maxS = d3.max(topPicks, d => d.score) || 1;
-    topPicks.forEach(p => {
-        container.innerHTML += `<div style="display:flex; align-items:center; gap:10px; font-size:0.75rem; margin-bottom:2px;">
+
+    // 최적화: 브라우저 렉 방지를 위해 최대 100개까지만 렌더링
+    const MAX_RENDER = 100;
+    const renderPicks = topPicks.slice(0, MAX_RENDER);
+    const maxS = d3.max(renderPicks, d => d.score) || 1;
+    
+    // 상단에 총 남은 후보 수 표시
+    let htmlStr = `<div style="font-size:0.65rem; color:#38BDF8; margin-bottom:8px; text-align:right; border-bottom:1px solid #1E293B; padding-bottom:4px;">[ TOTAL CANDIDATES : ${topPicks.length} ]</div>`;
+    
+    renderPicks.forEach(p => {
+        htmlStr += `<div style="display:flex; align-items:center; gap:10px; font-size:0.75rem; margin-bottom:4px;">
             <div class="matrix-text" style="color:#38BDF8; font-weight:bold; width:55px; text-align:right;" data-val="[${safeJoin(p.guess)}]">[####]</div>
             <div style="flex:1; height:8px; background:#0A0F1C; border:1px solid #1E293B;"><div style="height:100%; width: ${(p.score/maxS)*100}%; background: linear-gradient(90deg, #0284C7, #38BDF8); transition: width 0.4s ease;"></div></div>
             <div style="color:#94A3B8; width:45px; font-size:0.7rem; text-align:right;">${p.score.toFixed(2)}</div>
         </div>`;
     });
+    
+    // 100개가 넘어갈 경우 하단에 생략된 개수 표시
+    if (topPicks.length > MAX_RENDER) {
+        htmlStr += `<div style="text-align:center; font-size:0.65rem; color:#64748B; margin-top:8px; margin-bottom:10px;">... AND ${topPicks.length - MAX_RENDER} MORE ...</div>`;
+    }
+
+    container.innerHTML = htmlStr;
     runMatrixEffect();
 }
 

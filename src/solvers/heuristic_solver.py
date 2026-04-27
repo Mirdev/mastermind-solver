@@ -109,7 +109,7 @@ class HeuristicSolver:
             "dashboard_2_trend": {"remaining_count": total},
             "dashboard_3_evaluation": {
                 "metric_name": "Positional Frequency Score(NB)",
-                "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list[:5]]
+                "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list]
             }
         }
         

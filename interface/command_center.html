@@ -10,14 +10,19 @@
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #050914; } ::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 3px; }
         * { box-sizing: inherit; }
         
-        .sidebar { width: 180px; background-color: #080B14; padding: 12px; border-right: 1px solid #161F33; display: flex; flex-direction: column; gap: 10px; z-index: 10; box-shadow: 2px 0 10px rgba(0,0,0,0.8);}
-        .sidebar h2 { font-size: 0.95rem; margin: 0; color: #38BDF8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4); text-align: left; border: none; padding: 0;}
+        /* 히스토리 슬라이드 패널 스타일 적용 */
+        #history-panel { position: fixed; top: 0; left: -200px; width: 200px; height: 100vh; background-color: #080B14; border-right: 1px solid #161F33; transition: left 0.3s ease-in-out; z-index: 1000; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.8); }
+        #history-panel.history-open { left: 0; }
+        .sidebar-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+        .sidebar-content h2 { font-size: 0.95rem; margin: 0; color: #38BDF8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4); text-align: left; border: none; padding: 0;}
+        #history-toggle-btn { position: absolute; top: 20px; right: -30px; transform: translateY(-50%); width: 30px; height: 60px; background-color: #1E293B; color: #38BDF8; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 0 8px 8px 0; border: 1px solid #161F33; border-left: none; box-shadow: 2px 0 5px rgba(0,0,0,0.5); z-index: 1001; }
+        
         #file-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; padding-right: 5px;}
         .log-btn { background: #0A0F1C; color: #94A3B8; border: 1px solid #161F33; padding: 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; text-align: left; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .log-btn:hover { border-color: #38BDF8; color: #38BDF8;}
         .log-btn.active { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border-color: #38BDF8; box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.2);}
         
-        #d3-canvas-area { flex: 2.9; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); border-right: 2px solid rgba(59, 130, 246, 0.3); }
+        #d3-canvas-area { flex: 2.9; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); border-right: 2px solid rgba(59, 130, 246, 0.3); margin-left: 0; /* 패널 분리로 여백 제거 */ }
         .header-title { font-size: 1.2rem; font-weight: bold; margin: 0; text-align: center; color: #F8FAFC; letter-spacing: 1px; font-family: 'Orbitron';}
         .metrics-row { display: flex; gap: 10px; height: 60px; flex-shrink: 0;}
         .metric-card { flex: 1; background: rgba(11, 17, 32, 0.7); border: 1px solid #1E293B; border-radius: 4px; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative;}
@@ -54,7 +59,7 @@
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         .label-title { color: #60a5fa; font-weight: bold; margin-bottom: 8px; font-size: 12px; }
         .chip-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; } .chip-group input[type="radio"] { display: none; }
-        .chip-label { flex: 1; text-align: center; padding: 10px 5px; background: rgba(30, 58, 138, 0.1); color: #4b5563; border: 1px solid #1f2937; border-radius: 2px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; }
+        .chip-label { flex: 1; text-align: center; padding: 10px 5px; background: rgba(30, 58, 138, 0.1); color: #4b5563; border: 1px solid #1f2937; border-radius: 2px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; transition: opacity 0.2s; }
         .chip-label:hover { border-color: #3b82f6; color: #93c5fd; }
         input[name^="opt_"]:checked + .chip-label, input[name="strike"]:checked + .chip-label, input[name="ball"]:checked + .chip-label { background: rgba(0, 240, 255, 0.15); color: #00f0ff; border-color: #00f0ff; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
         .btn-action { background-color: transparent; color: #00f0ff; border: 1px solid #00f0ff; padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: 'Orbitron'; }
@@ -73,10 +78,15 @@
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2>📜 HISTORY LOGS</h2>
-        <div style="font-size: 0.75rem; color: #64748B; margin-bottom: 5px;">과거 시뮬레이션 복기</div>
-        <div id="file-list"></div>
+    <div id="history-panel" class="history-closed">
+        <div class="sidebar-content">
+            <h2>📜 HISTORY LOGS</h2>
+            <div style="font-size: 0.75rem; color: #64748B; margin-bottom: 5px;">과거 시뮬레이션 복기</div>
+            <div id="file-list"></div>
+        </div>
+        <div id="history-toggle-btn">
+            <span id="toggle-arrow">▶</span>
+        </div>
     </div>
 
     <div id="d3-canvas-area">
@@ -90,7 +100,7 @@
         </div>
         <div class="dashboard-grid">
             <div class="chart-container"><h3 class="chart-title">[Dash 1] 확률장 4-Chamber</h3>
-                <div id="dash1"><div class="chamber" id="ch0"></div><div class="chamber" id="ch1"></div><div class="chamber" id="ch2"></div><div class="chamber" id="ch3"></div></div>
+                <div id="dash1"></div>
             </div>
             <div class="chart-container"><h3 class="chart-title">[Dash 2] 후보군 붕괴 (Gravity Shatter)</h3><div id="dash2"></div></div>
             <div class="chart-container"><h3 class="chart-title">[Dash 3] 전술 평가 (HUD Leaderboard)</h3><div id="dash3"></div></div>
@@ -98,7 +108,7 @@
         </div>
     </div>
 
-    <script src="tactical_visualizer.min.js"></script>
+    <script src="tactical_visualizer.js"></script>
 
     <div id="control-panel">
         <div id="auto-overlay">
@@ -125,8 +135,8 @@
             <div>
                 <div class="label-title">> SOLVER_CORE</div>
                 <div class="chip-group">
-                    <input type="radio" name="opt_solver" id="sol_ent" value="fast_entropy" checked><label class="chip-label" for="sol_ent">ENTROPY</label>
-                    <input type="radio" name="opt_solver" id="sol_heu" value="heuristic"><label class="chip-label" for="sol_heu">HEURISTIC</label>
+                    <input type="radio" name="opt_solver" id="sol_ent" value="fast_entropy" checked><label class="chip-label" id="lbl_sol_ent" for="sol_ent">ENTROPY</label>
+                    <input type="radio" name="opt_solver" id="sol_heu" value="heuristic"><label class="chip-label" id="lbl_sol_heu" for="sol_heu">HEURISTIC</label>
                 </div>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -213,6 +223,32 @@
         var localTurn = 1;
         var nextAiGuess = [];
 
+        // 슬라이드 패널 이벤트 리스너 등록
+        document.addEventListener('DOMContentLoaded', function() {
+            const historyPanel = document.getElementById('history-panel');
+            const historyToggleBtn = document.getElementById('history-toggle-btn');
+            const toggleArrow = document.getElementById('toggle-arrow');
+
+            // 토글 버튼 클릭 시 패널 열기/닫기
+            historyToggleBtn.addEventListener('click', function(e) {
+                historyPanel.classList.toggle('history-open');
+                if (historyPanel.classList.contains('history-open')) {
+                    toggleArrow.innerText = '◀';
+                } else {
+                    toggleArrow.innerText = '▶';
+                }
+                e.stopPropagation(); // 이벤트 전파 차단
+            });
+
+            // 화면의 다른 곳 클릭 시 패널 닫기 (단, 패널 내부 클릭 시 닫히지 않음)
+            document.addEventListener('click', function(e) {
+                if (historyPanel.classList.contains('history-open') && !historyPanel.contains(e.target)) {
+                    historyPanel.classList.remove('history-open');
+                    toggleArrow.innerText = '▶';
+                }
+            });
+        });
+
         function renderFeedbackSockets(digits) {
             var sHtml = '', bHtml = '';
             for(var i=0; i<=digits; i++) {
@@ -224,28 +260,48 @@
             document.getElementById('ball-sockets').innerHTML = bHtml;
         }
 
+        // 버튼 활성화 상태 및 클릭 이벤트를 제어하는 헬퍼 함수
+        function setButtonState(activeId, inactiveId) {
+            document.getElementById(activeId).checked = true;
+            document.getElementById(inactiveId).checked = false;
+        }
+
+        function setPointerEvents(lblId, isClickable) {
+            var lbl = document.getElementById(lblId);
+            if(lbl) {
+                lbl.style.pointerEvents = isClickable ? "auto" : "none";
+                lbl.style.opacity = isClickable ? "1" : "0.3";
+            }
+        }
+
         function handleDigitChange() {
             var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
-            var lutOff = document.getElementById('lut_x');
-            var lutOn = document.getElementById('lut_o');
-            var lblLutOn = document.getElementById('lbl_lut_o');
-            var solHeu = document.getElementById('sol_heu');
-            var solEnt = document.getElementById('sol_ent');
             
             document.getElementById('my_secret').maxLength = digits;
             document.getElementById('opp_guess').maxLength = digits;
             renderFeedbackSockets(digits);
 
-            if (digits === 5) {
-                lutOff.checked = true;
-                lblLutOn.style.pointerEvents = "none";
-                lblLutOn.style.opacity = "0.2";
-                solHeu.checked = true;
-            } else {
-                lutOn.checked = true;
-                lblLutOn.style.pointerEvents = "auto";
-                lblLutOn.style.opacity = "1";
-                solEnt.checked = true;
+            // 초기화: 모든 제약조건 잠금 해제
+            setPointerEvents('lbl_sol_ent', true);
+            setPointerEvents('lbl_sol_heu', true);
+            setPointerEvents('lbl_lut_o', true);
+            setPointerEvents('lbl_lut_x', true);
+
+            // 자릿수별 디폴트 설정 및 락(Lock) 처리
+            if (digits === 3) {
+                setButtonState('sol_ent', 'sol_heu');
+                setButtonState('lut_x', 'lut_o');
+                setPointerEvents('lbl_sol_heu', false); // 휴리스틱 변경 불가
+                setPointerEvents('lbl_lut_o', false);   // LUT ON 변경 불가
+            } else if (digits === 4) {
+                setButtonState('sol_ent', 'sol_heu');
+                setButtonState('lut_o', 'lut_x');
+                // 4자리는 자유롭게 변경 가능 (초기화 외에 별도 락 없음)
+            } else if (digits === 5) {
+                setButtonState('sol_heu', 'sol_ent');
+                setButtonState('lut_x', 'lut_o');
+                setPointerEvents('lbl_sol_ent', false); // 엔트로피 변경 불가
+                setPointerEvents('lbl_lut_o', false);   // LUT ON 변경 불가
             }
         }
 
