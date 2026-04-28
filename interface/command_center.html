@@ -175,8 +175,8 @@
             <div>
                 <div class="label-title">> SOLVER_CORE</div>
                 <div class="chip-group">
-                    <input type="radio" name="opt_solver" id="sol_ent" value="fast_entropy" checked><label class="chip-label" id="lbl_sol_ent" for="sol_ent">ENTROPY</label>
-                    <input type="radio" name="opt_solver" id="sol_heu" value="heuristic"><label class="chip-label" id="lbl_sol_heu" for="sol_heu">HEURISTIC</label>
+                    <input type="radio" name="opt_solver" id="sol_ent" value="fast_entropy" checked onchange="handleSolverChange()"><label class="chip-label" id="lbl_sol_ent" for="sol_ent">ENTROPY</label>
+                    <input type="radio" name="opt_solver" id="sol_heu" value="heuristic" onchange="handleSolverChange()"><label class="chip-label" id="lbl_sol_heu" for="sol_heu">HEURISTIC</label>
                 </div>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -318,7 +318,7 @@
             document.getElementById('opp_guess').maxLength = digits;
             renderFeedbackSockets(digits);
 
-            // [수정] 대시보드 1번 타이틀 동적 업데이트
+            // 대시보드 1번 타이틀 동적 업데이트
             var dash1Title = document.getElementById('dash1-title');
             if(dash1Title) {
                 dash1Title.innerText = `[Dash 1] 확률장 ${digits}-Chamber`;
@@ -342,6 +342,24 @@
                 setButtonState('lut_x', 'lut_o');
                 setPointerEvents('lbl_sol_ent', false); 
                 setPointerEvents('lbl_lut_o', false);   
+            }
+        }
+
+        // [완벽 연동 버전] 솔버 변경 시 LUT 스위치 연동 함수
+        function handleSolverChange() {
+            var solver = document.querySelector('input[name="opt_solver"]:checked').value;
+            var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
+
+            if (solver === "heuristic") {
+                // 휴리스틱 선택 시: LUT를 'OFF'로 강제 이동시키고 'ON' 버튼을 잠금
+                setButtonState('lut_x', 'lut_o');
+                setPointerEvents('lbl_lut_o', false); 
+            } else {
+                // 엔트로피로 돌아왔을 때: 4자리 모드라면 다시 'ON' 버튼 잠금 해제 및 스위치 ON 복구
+                if (digits === 4) {
+                    setPointerEvents('lbl_lut_o', true);
+                    setButtonState('lut_o', 'lut_x');
+                }
             }
         }
 
