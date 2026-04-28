@@ -28,6 +28,7 @@ Thumbs.db
 logs/
 *.jsonl
 *.log
+interface/index.html
 
 # LUT Cache Data
 data/feedback_lut_4.npy
