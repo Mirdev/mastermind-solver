@@ -27,6 +27,7 @@ Thumbs.db
 # 새로 추가한 대시보드 로깅 폴더 및 파일 추적 제외
 logs/
 *.jsonl
+*.log
 
 # LUT Cache Data
 data/feedback_lut_4.npy

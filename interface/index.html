@@ -255,7 +255,7 @@
 
     <script>
         // 전역 상태 변수를 var로 선언 (초기화 에러 방지)
-        window.API_BASE = "";
+        window.API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
         var currentSessionId = null;
         var currentLogFile = null; 
         var currentMode = "interactive";

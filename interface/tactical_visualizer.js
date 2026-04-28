@@ -1,6 +1,6 @@
 // 전역 변수로 API_BASE 선언 (이미 있으면 유지)
 if (typeof API_BASE === 'undefined') {
-    window.API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`;
+    window.API_BASE = "";
 }
 
 window.renderTacticalDisplay = async function(fileName) {
