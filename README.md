@@ -334,15 +334,15 @@ pip install -r requirements.txt
 ### \[추천\] **Command OS v2.0 (메인 웹 환경)**
 가장 권장되는 통합 전술 통제 환경입니다. 원활한 통신과 CORS 보안 정책을 준수하기 위해 백엔드 API 서버와 프론트엔드 UI 서버를 각각 띄워야 합니다.
 
-**1) 백엔드 API 서버 가동 (Terminal A)**
-프로젝트 루트 경로에서 Uvicorn을 사용해 FastAPI 서버를 실행합니다.
-```bash
-python -m uvicorn src.api.server:app --host 127.0.0.1 --port 8000
-```
-**2) 프론트엔드 UI 서버 가동 (Terminal B)**
+**1) 프론트엔드 UI 서버 가동 (Terminal A)**
 새로운 터미널을 열고 동일한 프로젝트 루트 경로에서 파이썬 내장 웹 서버를 가동합니다.
 ```bash
 python -m http.server 8080
+```
+**2) 백엔드 API 서버 가동 (Terminal B)**
+프로젝트 루트 경로에서 Uvicorn을 사용해 FastAPI 서버를 실행합니다.
+```bash
+python -m uvicorn src.api.server:app --host 127.0.0.1 --port 8000
 ```
 **3) 웹 브라우저 접속**
 브라우저를 열고 아래 주소로 접속하여 작전을 시작합니다.

@@ -249,6 +249,7 @@ def get_session_log(file_name: str):
     return FileResponse(str(file_path), media_type="text/plain")
 
 @app.get("/api/logs")
+@app.get("/logs/")
 def list_logs():
     log_dir = Path("logs")
     if not log_dir.exists():

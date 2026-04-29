@@ -1,6 +1,7 @@
 // 전역 변수로 API_BASE 선언 (이미 있으면 유지)
 if (typeof API_BASE === 'undefined') {
-    window.API_BASE = "";
+    var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    window.API_BASE = isLocal ? "http://127.0.0.1:8000" : "";
 }
 
 window.renderTacticalDisplay = async function(fileName) {

@@ -148,7 +148,7 @@
         </div>
     </div>
 
-    <script src="tactical_visualizer.min.js"></script>
+    <script src="tactical_visualizer.js"></script>
 
     <div id="control-panel">
         <div id="auto-overlay">
@@ -256,7 +256,8 @@
 
     <script>
         // 전역 상태 변수를 var로 선언 (초기화 에러 방지)
-        window.API_BASE = "";
+        var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        window.API_BASE = isLocal ? "http://127.0.0.1:8000" : "";
         var currentSessionId = null;
         var currentLogFile = null; 
         var currentMode = "interactive";
