@@ -123,7 +123,7 @@ class FastEntropySolver:
             "dashboard_2_trend": {"remaining_count": total},
             "dashboard_3_evaluation": {
                 "metric_name": "Shannon Entropy (bits)",
-                "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list],
+                "top_guesses": [{"guess": list(g), "score": s} for g, s, _ in evaluation_list],
                 "expected_splits": sorted_splits,
                 "worst_split_comparison": { 
                     "guess": list(worst_guess) if worst_guess else [],
@@ -168,7 +168,10 @@ class FastEntropySolver:
                     _, counts = np.unique(grid[:, j], return_counts=True)
                     p = counts / N
                     entropy = -np.sum(p * np.log2(p))
-                    eval_list.append((self.candidates[j], float(entropy)))
+
+                    # [추가] NumPy를 활용하여 최악의 경우(가장 큰 덩어리) 도출
+                    worst_case = int(np.max(counts))
+                    eval_list.append((self.candidates[j], float(entropy), worst_case))
                     
             else:
                 # N자리 범용 브로드캐스팅 연산
@@ -186,9 +189,12 @@ class FastEntropySolver:
                     _, counts = np.unique(grid[:, j], return_counts=True)
                     p = counts / N
                     entropy = -np.sum(p * np.log2(p))
-                    eval_list.append((self.candidates[j], float(entropy)))
+                    
+                    # [추가] NumPy를 활용하여 최악의 경우(가장 큰 덩어리) 도출
+                    worst_case = int(np.max(counts))
+                    eval_list.append((self.candidates[j], float(entropy), worst_case))
 
-            eval_list.sort(key=lambda x: (round(x[1], 6), random.random()), reverse=True)
+            eval_list.sort(key=lambda x: (round(x[1], 6), -x[2]), reverse=True)
             best_guess = eval_list[0][0]
 
         payload = self._extract_dashboard_data(turn, best_guess, eval_list, "processing")

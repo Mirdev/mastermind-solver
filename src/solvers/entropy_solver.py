@@ -132,8 +132,8 @@ class EntropySolver:
             "dashboard_1_heatmap": {"probabilities": probs},
             "dashboard_2_trend": {"remaining_count": total},
             "dashboard_3_evaluation": {
-                "metric_name": "Shannon Entropy (bits)",
-                "top_guesses": [{"guess": list(g), "score": s} for g, s in evaluation_list],
+                "metric_name": "Shannon Entropy (bits) + Minimax Tie-breaker",
+                "top_guesses": [{"guess": list(g), "score": s} for g, s, _ in evaluation_list],
                 "expected_splits": sorted_splits,
                 "worst_split_comparison": { 
                     "guess": list(worst_guess) if worst_guess else [],
@@ -196,9 +196,14 @@ class EntropySolver:
                     p = count / total
                     entropy -= p * math.log2(p)
 
-                eval_list.append((guess, entropy))
-            
-            eval_list.sort(key=lambda x: (round(x[1], 6), random.random()), reverse=True)
+                # 미니맥스(Worst-case) 지표: 가장 크게 남는 후보군 그룹의 크기
+                worst_case = max(counts.values())
+                eval_list.append((guess, entropy, worst_case))
+
+            # 정렬 기준 강화
+            # 1순위: 엔트로피(내림차순)
+            # 2순위: 워스트 케이스(오름차순) -> reverse=True이므로 마이너스(-) 부호를 붙여 값이 클수록 우선순위 부여
+            eval_list.sort(key=lambda x: (round(x[1], 6), -x[2]), reverse=True)
             best_guess = eval_list[0][0]
 
         # [핵심 고정] 페이로드를 생성하고 내부에서 로깅까지 완료!
