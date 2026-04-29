@@ -192,6 +192,23 @@ else:
                             st.markdown(f"❌ **[비교] 만약 최하점 {w_guess} 공격 시?**<br>👉 똑같은 판정 `{w_splits[0][0][0]}S {w_splits[0][0][1]}B` 시 ➔ **무려 {w_splits[0][1]}개** 남음", unsafe_allow_html=True)
                         else:
                             st.caption("비교 데이터 계산 중...")
+                elif solver == "MinimaxSolver":
+                    splits = eval_data.get('expected_splits', [])
+                    worst_comp = eval_data.get('worst_split_comparison', {})
+                    
+                    if not splits:
+                        st.warning("현재 턴은 고정 전략 구간이므로 상세 근거를 생성하지 않습니다.")
+                    else:
+                        # Minimax의 splits[0]는 ["Worst-case", worst_case_count] 형태를 띰
+                        st.markdown(f"✅ **[채택] {best_guess} (Worst-case 최소화)**<br>👉 어떤 판정이 나오더라도 최대 **{splits[0][1]}개** 이하로 방어", unsafe_allow_html=True)
+                        st.markdown("<hr style='margin-top: 8px; margin-bottom: 8px;'>", unsafe_allow_html=True)
+                        
+                        if worst_comp and worst_comp.get('splits'):
+                            w_guess = worst_comp['guess']
+                            w_splits = worst_comp['splits']
+                            st.markdown(f"❌ **[비교] 만약 최악의 수 {w_guess} 공격 시?**<br>👉 운이 나쁠 경우 ➔ 무려 **{w_splits[0][1]}개**나 남음", unsafe_allow_html=True)
+                        else:
+                            st.caption("비교 데이터 계산 중...")
                 elif solver == "HeuristicSolver":
                     if remains <= 1:
                         st.info("정답 확정 단계입니다.")

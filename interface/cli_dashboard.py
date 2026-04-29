@@ -58,7 +58,7 @@ class CLIDashboard:
             print("   (다음 공격 숫자를 계산 중입니다.)")
         else:
             print(f"▶ [Dash 4] AI의 결정적 근거 (Why {best_guess}?):")
-            if solver == "EntropySolver" and 'expected_splits' in eval_data:
+            if (solver == "EntropySolver" or solver == "FastEntropySolver") and 'expected_splits' in eval_data:
                 splits = eval_data['expected_splits']
                 worst_comp = eval_data.get('worst_split_comparison', {})
                 if not splits:
@@ -72,6 +72,23 @@ class CLIDashboard:
                         w_splits = worst_comp['splits']
                         print(f"   [비교] 만약 최악의 수 {w_guess}를 찔렀다면?")
                         print(f"     └─ 가장 운이 나쁜 [{w_splits[0][0][0]}S {w_splits[0][0][1]}B] 판정 시 ➔ 무려 {w_splits[0][1]}개나 남음.")
+
+            elif solver == "MinimaxSolver" and 'expected_splits' in eval_data:
+                splits = eval_data['expected_splits']
+                worst_comp = eval_data.get('worst_split_comparison', {})
+                
+                if not splits:
+                    print("   (탐색 스킵)")
+                else:
+                    print(f"   [채택] {best_guess}를 찔렀을 때 (Worst-case 최소화 전략):")
+                    # splits[0][1]은 평가된 최악의 경우 남는 후보 수(worst_case)
+                    print(f"     ├─ 어떤 판정이 나오더라도 가장 운이 나쁜 경우 ➔ 최대 {splits[0][1]}개 이하로 방어 가능!")
+                    
+                    if worst_comp and worst_comp.get('splits'):
+                        w_guess = worst_comp['guess']
+                        w_splits = worst_comp['splits']
+                        print(f"   [비교] 만약 최악의 수 {w_guess}를 찔렀다면?")
+                        print(f"     └─ 운이 나쁠 경우 ➔ 무려 {w_splits[0][1]}개나 남음 (리스크 매우 높음).")
                         
             elif solver == "HeuristicSolver":
                 # 휴리스틱: 가중치 합산(Score Breakdown) 표기

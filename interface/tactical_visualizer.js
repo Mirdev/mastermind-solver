@@ -57,13 +57,28 @@ window.refreshLogList = async function() {
 };
 
 const safeJoin = (v) => Array.isArray(v) ? v.join("") : (v || "-");
+
+// [수정됨] Entropy와 Minimax 포맷 완벽 호환 파서
 function parseSplit(arr) {
-    if (!arr || !Array.isArray(arr) || arr.length === 0) return {s:'-', b:'-', c:'-'};
-    let target = (Array.isArray(arr[0]) && Array.isArray(arr[0][0])) ? arr[0] : arr;
-    if (Array.isArray(target) && target.length >= 2 && Array.isArray(target[0])) {
-        return {s: target[0][0], b: target[0][1], c: target[1]};
+    if (!arr || !Array.isArray(arr) || arr.length === 0) return {type: 'unknown', s:'-', b:'-', c:'-'};
+    
+    let target = arr;
+    // 배열 깊이 평탄화 (단일 노드 탐색)
+    if (Array.isArray(target) && Array.isArray(target[0])) {
+        target = target[0];
     }
-    return {s:'-', b:'-', c:'-'};
+
+    // 1. Minimax 포맷: e.g. ["Worst-case", 15]
+    if (typeof target[0] === 'string') {
+        return { type: 'minimax', label: target[0], c: target[1] };
+    }
+
+    // 2. Entropy 포맷: e.g. [[S, B], count]
+    if (Array.isArray(target[0]) && target.length >= 2) {
+        return { type: 'entropy', s: target[0][0], b: target[0][1], c: target[1] };
+    }
+    
+    return { type: 'unknown', s:'-', b:'-', c:'-'};
 }
 
 let gridInit = false, prevHistoryLength = 0;
@@ -335,22 +350,33 @@ function runMatrixEffect() {
     });
 }
 
+// [수정됨] Dash 4 렌더링 엔진 업데이트
 function renderDash4(data, status) {
     const container = document.getElementById("dash4"); 
     if (!container) return;
     const evalData = data.dashboard_3_evaluation || {};
     const isEnded = (status === 'win' || status === 'lose');
     const vsHTML = `<div class="vs-text ${isEnded ? 'static-vs' : 'pulse-vs'}">VS</div>`;
+    
     if(evalData.expected_splits && evalData.expected_splits.length > 0) {
         const sp = parseSplit(evalData.expected_splits[0]);
         const wcInfo = evalData.worst_split_comparison || {};
         const wcGuess = wcInfo.guess || ['-','-','-','-'];
         const wc = parseSplit(wcInfo.splits);
+        
+        let bestDesc = sp.type === 'minimax' 
+            ? `<div>판정: ${sp.label}</div><div>➔ 최대 잔여 노드: <span class="highlight">${sp.c}</span></div>`
+            : `<div>최악 피드백: ${sp.s}S ${sp.b}B</div><div>➔ 생존 노드: <span class="highlight">${sp.c}</span></div>`;
+
+        let worstDesc = wc.type === 'minimax' 
+            ? `<div>동일 판정: ${wc.label}</div><div>➔ 최대 잔여 노드: <span class="highlight">${wc.c}</span></div>`
+            : `<div>동일 피드백: ${wc.s}S ${wc.b}B</div><div>➔ 생존 노드: <span class="highlight">${wc.c}</span></div>`;
+
         container.innerHTML = `<div class="split-box best-box slide-in-left"><span style="color:#10B981">TARGET ADOPTED</span><div class="highlight">[${safeJoin(data.best_guess)}]</div>
-            <div>최악 피드백: ${sp.s}S ${sp.b}B</div><div>➔ 생존 노드: <span class="highlight">${sp.c}</span></div></div>
+            ${bestDesc}</div>
             ${vsHTML}
             <div class="split-box worst-box slide-in-right"><span style="color:#F43F5E">WORST CASE</span><div class="highlight">[${safeJoin(wcGuess)}]</div>
-            <div>동일 피드백: ${wc.s}S ${wc.b}B</div><div>➔ 생존 노드: <span class="highlight">${wc.c}</span></div></div>`;
+            ${worstDesc}</div>`;
     } else if (evalData.top_guesses && evalData.top_guesses.length >= 2) {
         const best = evalData.top_guesses[0], worst = evalData.top_guesses[evalData.top_guesses.length-1];
         container.innerHTML = `<div class="split-box best-box slide-in-left"><span style="color:#10B981">BEST FREQ</span><div class="highlight">[${safeJoin(best.guess)}]</div><div>가중치: ${best.score.toFixed(2)}</div></div>

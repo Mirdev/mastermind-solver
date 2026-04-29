@@ -9,6 +9,7 @@ from src.game_engine import MastermindEngine
 from src.solvers.heuristic_solver import HeuristicSolver
 from src.solvers.entropy_solver import EntropySolver
 from src.solvers.fast_entropy_solver import FastEntropySolver
+from src.solvers.minimax_solver import MinimaxSolver
 
 # LUT 엔진은 4자리 전용이므로 안전하게 임포트합니다.
 try:
@@ -39,22 +40,22 @@ def run_all_benchmarks():
         {
             "desc": "표준 규칙 (중복X, 0시작X)",
             "config": {"digits": 4, "allow_duplicates": False, "allow_leading_zero": False},
-            "iters": 100
+            "iters": 1000
         },
         {
             "desc": "확장 규칙 (중복X, 0시작O)",
             "config": {"digits": 4, "allow_duplicates": False, "allow_leading_zero": True},
-            "iters": 100
+            "iters": 1000
         },
         {
             "desc": "중복 규칙 (중복O, 0시작X)",
             "config": {"digits": 4, "allow_duplicates": True, "allow_leading_zero": False},
-            "iters": 100
+            "iters": 1000
         },
         {
             "desc": "하드코어 규칙 (중복O, 0시작O)",
             "config": {"digits": 4, "allow_duplicates": True, "allow_leading_zero": True},
-            "iters": 100
+            "iters": 1000
         }
     ]
 
@@ -74,11 +75,11 @@ def run_all_benchmarks():
         print(f"▶ 사용 엔진: {engine_name}")
         print(f"{'='*60}")
 
-        # 신규 추가된 FastEntropySolver를 테스트 목록에 포함
         solvers = [
             ("Heuristic (Freq)", HeuristicSolver),
             ("Shannon Entropy (Standard)", EntropySolver),
-            ("Fast Shannon Entropy (Vectorized)", FastEntropySolver)
+            ("Fast Shannon Entropy (Vectorized)", FastEntropySolver),
+            ("Minimax (Knuth)", MinimaxSolver)
         ]
 
         for name, solver_ptr in solvers:

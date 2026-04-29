@@ -141,13 +141,27 @@
         const safeJoin = (v) => Array.isArray(v) ? v.join("") : (v || "-");
         const flatVal = (v) => Array.isArray(v) ? flatVal(v[0]) : v;
         
+        // [업데이트됨] Entropy 솔버와 Minimax 솔버의 페이로드 구조를 모두 호환하는 하이브리드 파서
         function parseSplit(arr) {
-            if (!arr || !Array.isArray(arr) || arr.length === 0) return {s:'-', b:'-', c:'-'};
-            let target = (Array.isArray(arr[0]) && Array.isArray(arr[0][0])) ? arr[0] : arr;
-            if (Array.isArray(target) && target.length >= 2 && Array.isArray(target[0])) {
-                return {s: target[0][0], b: target[0][1], c: target[1]};
+            if (!arr || !Array.isArray(arr) || arr.length === 0) return {type: 'unknown', s:'-', b:'-', c:'-'};
+            
+            let target = arr;
+            // 배열 깊이 평탄화 (단일 노드 탐색)
+            if (Array.isArray(target) && Array.isArray(target[0])) {
+                target = target[0];
             }
-            return {s:'-', b:'-', c:'-'};
+
+            // 1. Minimax 포맷: e.g. ["Worst-case", 15]
+            if (typeof target[0] === 'string') {
+                return { type: 'minimax', label: target[0], c: target[1] };
+            }
+
+            // 2. Entropy 포맷: e.g. [[S, B], count]
+            if (Array.isArray(target[0]) && target.length >= 2) {
+                return { type: 'entropy', s: target[0][0], b: target[0][1], c: target[1] };
+            }
+            
+            return { type: 'unknown', s:'-', b:'-', c:'-'};
         }
 
         let state = { isLive: true, isStandby: true, autoRefresh: true, refreshRate: 1000, selectedFile: null, logFiles: [], baselineFile: null, baselineDataStr: "", currentDataStr: "" };
@@ -240,14 +254,13 @@
             }
             prevHistoryLength = history.length;
 
-            // 중앙 집중형 직접 렌더링 방식 (내부 가드에서 판단)
             renderDash1(latest, displayStatus);
             renderDash2(history); 
             renderDash3(latest, displayStatus);
             renderDash4(latest, displayStatus);
         }
 
-	// =================================================================
+        // =================================================================
         // [Dash 1] 확률장 4-Chamber: True 1-Pass Sync Masking & Cool-down Glow
         // =================================================================
         function renderDash1(data, status) {
@@ -280,12 +293,10 @@
                     ch.y = d3.scalePoint().domain(d3.range(10)).range([15, h-15]);
                     if (i === 0) svg.append("g").attr("transform", "translate(22,0)").call(d3.axisLeft(ch.y).tickSize(2));
                     
-                    // [수정] 과거 그래프: 초기 투명도 설정 제거. (이벤트 발생 시 동적으로 제어)
                     const gOld = svg.append("g").attr("clip-path", `url(#${ch.clipOldId})`);
                     ch.pathOld = gOld.append("path").attr("class", "wave-line").attr("stroke", colors[i]);
                     ch.laserOld = gOld.append("line").attr("class", "strike-laser").attr("stroke", "#FFF").style("display", "none");
 
-                    // 새 그래프
                     const gNew = svg.append("g").attr("clip-path", `url(#${ch.clipNewId})`);
                     ch.pathNew = gNew.append("path").attr("class", "wave-line").attr("stroke", colors[i]);
                     ch.laserNew = gNew.append("line").attr("class", "strike-laser").attr("stroke", "#FFF").style("display", "none");
@@ -294,7 +305,6 @@
                     ch.svg = svg; ch.w = w; ch.h = h; ch.initialized = true;
                 }
 
-// 새 턴이 감지되었을 때 단 1회 스캔 실행 (승리 상태여도 무조건 강제 실행)
                 if (isNewTurn) {
                     if (!('currProbs' in ch)) {
                         ch.currProbs = posProbs;
@@ -308,7 +318,6 @@
 
                     const lineGen = d3.line().curve(d3.curveMonotoneY).x(d => ch.x(d.prob)).y(d => ch.y(d.digit));
                     
-                    // 과거 그래프를 다시 100% 글로우 상태로 켠 뒤 렌더링
                     ch.pathOld.datum(d3.range(10).map(d=>({digit:d, prob:ch.prevProbs[d]}))).attr("d", lineGen).style("opacity", 1);
                     ch.pathNew.datum(d3.range(10).map(d=>({digit:d, prob:ch.currProbs[d]}))).attr("d", lineGen);
 
@@ -322,7 +331,6 @@
                                    .style("display", "block");
                     } else ch.laserNew.style("display", "none");
 
-                    // 마스크 및 스캐너 초기 위치 세팅
                     ch.svg.select(".rect-new").interrupt().attr("y", 0).attr("height", 0);
                     ch.svg.select(".rect-old").interrupt().attr("y", 0).attr("height", ch.h);
                     ch.scanner.interrupt().style("top", "0px").style("opacity", 1).style("display", "block");
@@ -330,23 +338,19 @@
                     const scanTime = 800; 
                     const delay = i * 150; 
 
-                    // 1. 단절 마스킹 (스캐너 라인을 경계로 완벽히 분리)
                     ch.svg.select(".rect-new").transition().delay(delay).duration(scanTime).ease(d3.easeLinear).attr("height", ch.h);
                     ch.svg.select(".rect-old").transition().delay(delay).duration(scanTime).ease(d3.easeLinear).attr("y", ch.h).attr("height", 0);
                     
-                    // 2. 스캐너 하강
                     ch.scanner.transition().delay(delay).duration(scanTime).ease(d3.easeLinear).style("top", `${ch.h}px`)
                               .transition().duration(200).style("opacity", 0)
                               .on("end", () => { ch.scanner.style("display", "none"); });
 
-                    // 3. 쿨다운 이펙트 (과거 그래프가 스캔 진행과 함께 1.0 -> 0.25 투명도로 서서히 식어감)
                     ch.pathOld.transition().delay(delay).duration(scanTime * 1.5).ease(d3.easeCubicOut).style("opacity", 0.25);
                     if (ch.prevGuess !== null) {
                         ch.laserOld.transition().delay(delay).duration(scanTime * 1.5).ease(d3.easeCubicOut).style("opacity", 0.25);
                     }
 
                 } else if (status === 'win' || status === 'lose') {
-                     // 턴이 바뀌지 않은 상태(애니메이션 종료 후)에서 게임이 끝났다면, 재실행 방지를 위한 정지 상태 유지
                      ch.svg.select(".rect-new").interrupt().attr("y", 0).attr("height", ch.h);
                      ch.svg.select(".rect-old").interrupt().attr("y", ch.h).attr("height", 0);
                      ch.scanner.interrupt().style("opacity", 0).style("display", "none");
@@ -355,8 +359,7 @@
         }
 
         // =========================================================
-        // [핵심 해결] 팡 터지고 포물선을 그리며 바닥(X축)으로 떨어지는
-        // 독립 X/Y축 물리 엔진 (Gravity & Scatter)
+        // [Dash 2] 후보군 붕괴 (Gravity & Scatter)
         // =========================================================
         function renderDash2(history) {
             const container = document.getElementById('dash2');
@@ -415,42 +418,37 @@
                     const startX = +node.attr("x");
                     const startY = +node.attr("y");
 
-                    // 물리량 계산 (X축: 관성 / Y축: 폭발 후 중력)
-                    const spreadX = (Math.random() - 0.5) * 400; // 좌우 비산 거리
-                    const targetX = Math.max(0, Math.min(w - rectW, startX + spreadX)); // 화면 안 벗어나게 제한
+                    const spreadX = (Math.random() - 0.5) * 400; 
+                    const targetX = Math.max(0, Math.min(w - rectW, startX + spreadX)); 
                     
-                    const jumpY = startY - (50 + Math.random() * 100); // 팡! 솟구치는 높이
-                    const fallY = h - rectH + 3; // [핵심] 바닥(X축)의 절대 좌표!
+                    const jumpY = startY - (50 + Math.random() * 100); 
+                    const fallY = h - rectH + 3; 
 
-                    const totalTime = 1200 + Math.random() * 1000; // 애니메이션 시간 대폭 증가 (1.2초 ~ 2.2초)
-                    const jumpTime = totalTime * 0.3; // 30%의 시간 동안 솟구침
-                    const fallTime = totalTime * 0.7; // 70%의 시간 동안 추락
+                    const totalTime = 1200 + Math.random() * 1000; 
+                    const jumpTime = totalTime * 0.3; 
+                    const fallTime = totalTime * 0.7; 
 
-                    // 0. 하얗게 점화
                     node.attr("fill", "#FFF");
 
-                    // 1. X축 독립 이동 (직선으로 부드럽게 감속)
                     node.transition("moveX")
                         .duration(totalTime)
                         .ease(d3.easeQuadOut)
                         .attr("x", targetX);
 
-                    // 2. 파편 크기 축소 (파괴 효과)
                     node.transition("shrink")
                         .duration(jumpTime)
                         .attr("width", Math.max(1, rectW * 0.5))
                         .attr("height", Math.max(1, rectH * 0.5));
 
-                    // 3. Y축 독립 이동 (위로 팡! ➔ 아래로 쿵!)
                     node.transition("moveY")
                         .duration(jumpTime)
-                        .ease(d3.easeCubicOut) // 위로 갈 땐 감속
+                        .ease(d3.easeCubicOut)
                         .attr("y", jumpY)
-                        .transition() // 이어서
+                        .transition()
                         .duration(fallTime)
-                        .ease(d3.easeBounceOut) // 바닥으로 추락 + 바운스!
+                        .ease(d3.easeBounceOut)
                         .attr("y", fallY)
-                        .transition() // 바닥에 닿은 후 스르륵 소멸
+                        .transition()
                         .duration(400)
                         .style("opacity", 0)
                         .remove();
@@ -477,12 +475,10 @@
         function renderDash3(data, status) {
             if (!window.dash3State) window.dash3State = { turn: -1, status: '' };
             
-            // 변경사항이 없으면 렌더링 완전 패스
             if (window.dash3State.turn === data.turn && window.dash3State.status === status) return;
             
             const container = document.getElementById("dash3");
             
-            // [해결] 동일 턴에서 상태만 'win'으로 바뀌었다면, 꿀렁이는 재렌더링 없이 조용히 스타일만 업데이트 (Soft-Update)
             if (window.dash3State.turn === data.turn && status === 'win') {
                 const firstRow = container.querySelector('.hud-bar-wrap');
                 if (firstRow) {
@@ -544,7 +540,9 @@
             });
         }
 
-        // [Dash 4] 판단 근거 (Soft-Update 기반 VS 킬 스위치 장착)
+        // =================================================================
+        // [업데이트됨] Dash 4: 판단 근거 (Minimax / Entropy 포맷 완벽 호환)
+        // =================================================================
         function renderDash4(data, status) {
             if (!window.dash4State) window.dash4State = { turn: -1, status: '' };
             
@@ -552,7 +550,6 @@
             
             const container = document.getElementById("dash4"); 
             
-            // [해결] 동일 턴에서 'win' 상태가 되었을 때, 박스를 재렌더링하지 않고 VS 글자의 클래스만 교체하여 심장박동을 멈춤
             if (window.dash4State.turn === data.turn && (status === 'win' || status === 'lose')) {
                 const vsText = container.querySelector('.vs-text');
                 if (vsText) {
@@ -571,16 +568,26 @@
             const vsHTML = `<div class="vs-text ${isEnded ? 'static-vs' : 'pulse-vs'}">VS</div>`;
             
             if(evalData.expected_splits && evalData.expected_splits.length > 0) {
+                // Minimax 포맷과 Entropy 포맷을 공통으로 처리하여 받아옴
                 const sp = parseSplit(evalData.expected_splits[0]);
                 const wcInfo = evalData.worst_split_comparison || {};
                 const wcGuess = wcInfo.guess || ['-','-','-','-'];
                 const wc = parseSplit(wcInfo.splits);
                 
+                // 타입에 따라 출력될 텍스트를 유동적으로 생성
+                let bestDesc = sp.type === 'minimax' 
+                    ? `<div>판정: ${sp.label}</div><div>➔ 최대 잔여 노드: <span class="highlight">${sp.c}</span></div>`
+                    : `<div>최악 피드백: ${sp.s}S ${sp.b}B</div><div>➔ 생존 노드: <span class="highlight">${sp.c}</span></div>`;
+
+                let worstDesc = wc.type === 'minimax' 
+                    ? `<div>동일 판정: ${wc.label}</div><div>➔ 최대 잔여 노드: <span class="highlight">${wc.c}</span></div>`
+                    : `<div>동일 피드백: ${wc.s}S ${wc.b}B</div><div>➔ 생존 노드: <span class="highlight">${wc.c}</span></div>`;
+
                 container.innerHTML = `<div class="split-box best-box slide-in-left"><span style="color:#10B981">TARGET ADOPTED</span><div class="highlight">[${safeJoin(data.best_guess)}]</div>
-                    <div>최악 피드백: ${sp.s}S ${sp.b}B</div><div>➔ 생존 노드: <span class="highlight">${sp.c}</span></div></div>
+                    ${bestDesc}</div>
                     ${vsHTML}
                     <div class="split-box worst-box slide-in-right"><span style="color:#F43F5E">WORST CASE</span><div class="highlight">[${safeJoin(wcGuess)}]</div>
-                    <div>동일 피드백: ${wc.s}S ${wc.b}B</div><div>➔ 생존 노드: <span class="highlight">${wc.c}</span></div></div>`;
+                    ${worstDesc}</div>`;
             } else if (evalData.top_guesses && evalData.top_guesses.length >= 2) {
                 const best = evalData.top_guesses[0], worst = evalData.top_guesses[evalData.top_guesses.length-1];
                 container.innerHTML = `<div class="split-box best-box slide-in-left"><span style="color:#10B981">BEST FREQ</span><div class="highlight">[${safeJoin(best.guess)}]</div><div>가중치: ${best.score.toFixed(2)}</div></div>

@@ -13,14 +13,15 @@ from src.game_engine import MastermindEngine
 from src.solvers.entropy_solver import EntropySolver
 from src.solvers.heuristic_solver import HeuristicSolver
 from src.solvers.fast_entropy_solver import FastEntropySolver
+from src.solvers.minimax_solver import MinimaxSolver
 from interface.cli_dashboard import CLIDashboard  # 대시보드 모듈 추가됨
 
-# --- [정석: 함수를 밖으로 분리] ---
+
 
 def do_attack(solver, turn, digits):
     """AI가 공격하고 사용자의 피드백을 받는 함수"""
     start_time = time.time()
-    # 모든 솔버가 turn 인자를 받는다고 가정
+
     guess = solver.get_best_guess(turn)
     print(f"▶ AI 추천 공격: **{guess}** (계산: {time.time() - start_time:.4f}s)")
     
@@ -84,7 +85,7 @@ def run_calculator(use_dashboard=False):
         allow_dup = input("2) 중복 허용? (y/n): ").lower() == 'y'
         allow_zero = input("3) 0으로 시작 허용? (y/n): ").lower() == 'y'
         use_lut = input("4) 초고속 LUT 가속 엔진 사용? (y/n): ").lower() == 'y'
-        solver_choice = input("\n[솔버] 1: Entropy | 2: Heuristic | 3: Fast-Entropy (기본 1): ") or "1"
+        solver_choice = input("\n[솔버] 1: Entropy | 2: Heuristic | 3: Fast-Entropy | 4: Minimax (기본 1): ") or "1"
     except ValueError:
         digits, allow_dup, allow_zero, use_lut, solver_choice = 4, False, False, False, "1"
 
@@ -104,12 +105,14 @@ def run_calculator(use_dashboard=False):
 
     # 솔버 생성 시 대시보드 콜백 전달
     callback = dashboard.receive_data if dashboard else None
-    if solver_choice == "2":
-        solver = HeuristicSolver(engine, observer_callback=callback)
-    elif solver_choice == "1":
+    if solver_choice == "1":
         solver = EntropySolver(engine, observer_callback=callback)
-    else:
+    elif solver_choice == "2":
+        solver = HeuristicSolver(engine, observer_callback=callback)
+    elif solver_choice == "3":
         solver = FastEntropySolver(engine, observer_callback=callback)
+    else:
+        solver = MinimaxSolver(engine, observer_callback=callback)
 
     while True:
         my_secret_str = input(f"\n상대방이 맞춰야 할 '당신의 숫자'({digits}자리)를 입력하세요: ").replace(" ", "")
