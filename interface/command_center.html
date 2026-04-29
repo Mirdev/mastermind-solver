@@ -313,7 +313,6 @@
             }
         }
 
-        // [수정됨] Minimax 연산량 제어 및 라벨 처리 추가
         function handleDigitChange() {
             var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
             
@@ -326,53 +325,43 @@
                 dash1Title.innerText = `[Dash 1] 확률장 ${digits}-Chamber`;
             }
 
+            // 초기화: 우선 모든 버튼의 잠금을 해제합니다.
             setPointerEvents('lbl_sol_ent', true);
             setPointerEvents('lbl_sol_heu', true);
             setPointerEvents('lbl_sol_mini', true);
             setPointerEvents('lbl_lut_o', true);
             setPointerEvents('lbl_lut_x', true);
 
-            var currentSolver = document.querySelector('input[name="opt_solver"]:checked').value;
-
+            // 기획 의도에 맞춘 하드코딩 기본값 리셋
             if (digits === 3) {
-                setPointerEvents('lbl_sol_heu', false); 
-                setPointerEvents('lbl_lut_o', false);   
+                // 3자리: 기본값 엔트로피, LUT OFF 강제
+                document.getElementById('sol_ent').checked = true;
                 setButtonState('lut_x', 'lut_o');
-                // 휴리스틱이 막히므로, 휴리스틱을 선택 중이었다면 엔트로피로 자동 이동
-                if (currentSolver === 'heuristic') document.getElementById('sol_ent').checked = true;
+                setPointerEvents('lbl_lut_o', false); // LUT ON 잠금
             } else if (digits === 4) {
-                // 4자리일 땐 handleSolverChange가 알아서 LUT 상태를 컨트롤함
+                // 4자리: 기본값 엔트로피, LUT ON 강제 (모든 옵션 조작 가능)
+                document.getElementById('sol_ent').checked = true;
+                setButtonState('lut_o', 'lut_x');
             } else if (digits === 5) {
+                // 5자리: 기본값 휴리스틱, LUT OFF 강제
+                document.getElementById('sol_heu').checked = true;
+                setButtonState('lut_x', 'lut_o');
+                // 연산량 제어를 위해 엔트로피, 미니맥스, LUT ON 잠금
                 setPointerEvents('lbl_sol_ent', false); 
-                // 5자리일 땐 Minimax도 잠금 (연산량 과부하 방지)
                 setPointerEvents('lbl_sol_mini', false); 
                 setPointerEvents('lbl_lut_o', false);   
-                setButtonState('lut_x', 'lut_o');
-                
-                // 막혀있는 엔트로피나 미니맥스를 선택 중이었다면, 가장 가벼운 휴리스틱으로 자동 강제 이동
-                if (currentSolver === 'fast_entropy' || currentSolver === 'minimax') {
-                    document.getElementById('sol_heu').checked = true;
-                }
             }
-            // 최종적으로 솔버 상태 변경 로직(LUT 동기화)을 한번 더 태워줌
+            
             handleSolverChange();
         }
 
-        // 솔버 변경 시 LUT 스위치 연동 함수
+        // [수정 완료] 4자리 환경에서는 솔버 변경이 LUT 활성화 상태에 전혀 개입하지 않습니다.
         function handleSolverChange() {
-            var solver = document.querySelector('input[name="opt_solver"]:checked').value;
             var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
 
-            if (solver === "heuristic") {
-                // 휴리스틱 선택 시: LUT를 'OFF'로 강제 이동시키고 'ON' 버튼을 잠금
-                setButtonState('lut_x', 'lut_o');
-                setPointerEvents('lbl_lut_o', false); 
-            } else {
-                // 엔트로피로 돌아왔을 때: 4자리 모드라면 다시 'ON' 버튼 잠금 해제 및 스위치 ON 복구
-                if (digits === 4) {
-                    setPointerEvents('lbl_lut_o', true);
-                    setButtonState('lut_o', 'lut_x');
-                }
+            if (digits === 4) {
+                // 어떠한 솔버를 누르더라도 LUT ON/OFF 버튼을 자유롭게 조작할 수 있도록 보장합니다.
+                setPointerEvents('lbl_lut_o', true);
             }
         }
 
@@ -522,7 +511,7 @@
             var s = parseInt(document.querySelector('input[name="strike"]:checked').value);
             var b = parseInt(document.querySelector('input[name="ball"]:checked').value);
             var maxDigits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
-            if (s + b > maxDigits) { alert(`S와 B의 합이 자릿수(${maxDigits})를 초과할 수 없습니다.`); return; }
+            if (s + b > maxDigits) { alert(`S와 B의 합이 자릿수(${maxDigits})를 초과할 수문을 초과할 수 없습니다.`); return; }
             try {
                 var res = await fetch(`${window.API_BASE}/game/${currentSessionId}/attack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strike: s, ball: b }) });
                 var data = await res.json();
