@@ -149,13 +149,9 @@ class MinimaxSolver:
                 best_guess = tuple(int(d) for d in pattern)
             else:
                 best_guess = tuple(int(d) for d in self.start_digits[:self.digits])
-
-        if not is_lut:
-            if turn == 2:
-                next_digits = (self.start_digits[self.digits:] + self.start_digits)[:self.digits]
-                best_guess = tuple(int(d) for d in next_digits)
-            elif len(self.candidates) > 500:
-                best_guess = self.candidates[0]
+        elif turn == 2:
+            next_digits = (self.start_digits[self.digits:] + self.start_digits)[:self.digits]
+            best_guess = tuple(int(d) for d in next_digits)
 
         # 2. 미니맥스 전수 조사
         if best_guess is None:

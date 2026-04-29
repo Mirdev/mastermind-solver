@@ -1,6 +1,6 @@
 # Mastermind(숫자야구) AI Solver
 
-**Information Theory와 Naive Bayesian 접근법을 결합한 고성능 숫자 야구(Mastermind) 솔버입니다.**
+**Information Theory, Naive Bayesian, 그리고 Minimax(Knuth) 접근법을 결합한 고성능 숫자 야구(Mastermind) 솔버입니다.**
 
 단순한 무차별 대입(Brute-force)이 아니라, 기대 정보량(Shannon Entropy, $$H(X) = -\sum p(x) \log_2 p(x)$$)을 극대화하고 빈도 분석(Heuristic)을 통해 최적의 해를 찾아냅니다. 9회 제한이 있는 실전 야구 게임 규칙에서도 압도적인 승률을 보장합니다.
 
@@ -9,6 +9,7 @@
 ## Key Features
 
 * **Multi-Tier Architecture**:
+    * **Minimax Solver** *(new)*: Donald Knuth의 알고리즘을 채택하여, 어떤 피드백(S/B)이 나오더라도 남는 후보군의 최대 개수(Worst-case)를 가장 작게 방어하는 안정성 1티어 솔버입니다. 동률 발생 시 섀넌 엔트로피를 타이 브레이커로 사용하여 효율을 극대화합니다.
     * **FastEntropySolver**: 순수 파이썬 루프를 배제하고 NumPy 3차원 브로드캐스팅 및 행렬 교차 연산을 적용하여, 대규모 시뮬레이션에서 압도적인 속도를 자랑하는 벡터라이제이션 솔버입니다.
     * **Entropy Solver**: Shannon Entropy 기반의 표준 솔버. 이론적 최적해를 지향하며 최소 턴 수를 보장합니다.
     * **Heuristic Solver**: 위치별 빈도 분석(Naive Bayesian) 기반으로 연산 비용이 매우 낮아 실시간 처리에 적합합니다.
@@ -16,8 +17,7 @@
 * **Flexible Rule Support**: 자릿수 변경(Default 4), 중복 허용(Duplicates), 0으로 시작하는 숫자(Leading Zero) 등 하드코어 규칙 완벽 대응.
 * **Performance Fine-tuning**:
     * **Class-level Caching**: 후보군 생성 오버헤드 최소화.
-    * **Strategic Turn Skipping**: 초반 2~3턴 하드코딩 시드를 통한 연산 지연 최적화.
-    * **Pragmatic Sampling**: 연산 효율을 위한 $N=200$ 샘플링 로직 적용.
+    * **Strategic Turn Skipping**: 초반 2턴 하드코딩 시드를 통한 연산 지연 최적화.
 * **Interactive Tactical Console**: 실전 대결 모드 및 AI 추천 공격 기능을 제공합니다.
 * **Explainable AI (XAI) Dashboard**: 블랙박스 형태를 탈피하고, AI의 의사결정 과정을 투명하게 시각화하는 4단계 분석 리포트를 제공합니다.
     * **Dash 2 (Trend)**: 남은 정답 후보군의 실시간 생존 현황 추적.
@@ -46,6 +46,7 @@
 2.  **Dash 2 (Trend)**: 턴이 경과함에 따라 정답 후보군이 얼마나 급격하게 소거되는지 선형 그래프로 추적합니다.
 3.  **Dash 3 (Evaluation)**: 현재 알고리즘(Entropy/Heuristic)이 평가한 공격 후보군 리스트와 각각의 점수를 표 형태로 제공합니다.
 4.  **Dash 4 (Rationale)**: 
+    * **Minimax**: '최대 잔여 노드 수', 최악의 수(Worst Case)를 찔렀을 때의 리스크와 대조.
     * **Entropy**: Minimax 기반 스플릿 비교 (최악의 판정 시에도 남는 후보수 최소화 증명).
     * **Heuristic**: 나이브 베이지안 빈도 가중치 합산 산식 노출.
 
@@ -131,50 +132,50 @@
 ▶ 설정: {'digits': 4, 'allow_duplicates': False, 'allow_leading_zero': False}
 ▶ 사용 엔진: MastermindLUTEngine (O(1) 캐시 가속)
 ============================================================
-[*] Heuristic (Freq) 테스트 시작 (100회)...
-[-] 결과: 평균 5.26회 | 총 소요시간: 1.66초
-[*] Shannon Entropy (Standard) 테스트 시작 (100회)...
-[-] 결과: 평균 5.25회 | 총 소요시간: 64.35초
-[*] Fast Shannon Entropy (Vectorized) 테스트 시작 (100회)...
-[-] 결과: 평균 5.16회 | 총 소요시간: 48.98초
+[*] Heuristic (Freq) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.40회 | 총 소요시간: 21.61초
+[*] Fast Shannon Entropy (Vectorized) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.40회 | 총 소요시간: 19.84초
+[*] Minimax (Knuth) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.37회 | 총 소요시간: 19.36초
 
 ============================================================
 ▶ 테스트 시나리오: 확장 규칙 (중복X, 0시작O)
 ▶ 설정: {'digits': 4, 'allow_duplicates': False, 'allow_leading_zero': True}
 ▶ 사용 엔진: MastermindLUTEngine (O(1) 캐시 가속)
 ============================================================
-[*] Heuristic (Freq) 테스트 시작 (100회)...
-[-] 결과: 평균 5.31회 | 총 소요시간: 1.83초
-[*] Shannon Entropy (Standard) 테스트 시작 (100회)...
-[-] 결과: 평균 5.31회 | 총 소요시간: 84.38초
-[*] Fast Shannon Entropy (Vectorized) 테스트 시작 (100회)...
-[-] 결과: 평균 5.44회 | 총 소요시간: 60.34초
+[*] Heuristic (Freq) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.47회 | 총 소요시간: 23.40초
+[*] Fast Shannon Entropy (Vectorized) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.39회 | 총 소요시간: 21.99초
+[*] Minimax (Knuth) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.51회 | 총 소요시간: 21.76초
 
 ============================================================
 ▶ 테스트 시나리오: 중복 규칙 (중복O, 0시작X)
 ▶ 설정: {'digits': 4, 'allow_duplicates': True, 'allow_leading_zero': False}
 ▶ 사용 엔진: MastermindLUTEngine (O(1) 캐시 가속)
 ============================================================
-[*] Heuristic (Freq) 테스트 시작 (100회)...
-[-] 결과: 평균 6.02회 | 총 소요시간: 2.05초
-[*] Shannon Entropy (Standard) 테스트 시작 (100회)...
-[-] 결과: 평균 5.89회 | 총 소요시간: 473.48초
-[*] Fast Shannon Entropy (Vectorized) 테스트 시작 (100회)...
-[-] 결과: 평균 5.76회 | 총 소요시간: 167.78초
+[*] Heuristic (Freq) 테스트 시작 (1000회)...
+[-] 결과: 평균 6.10회 | 총 소요시간: 19.81초
+[*] Fast Shannon Entropy (Vectorized) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.80회 | 총 소요시간: 42.18초
+[*] Minimax (Knuth) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.84회 | 총 소요시간: 44.86초
 
 ============================================================
 ▶ 테스트 시나리오: 하드코어 규칙 (중복O, 0시작O)
 ▶ 설정: {'digits': 4, 'allow_duplicates': True, 'allow_leading_zero': True}
 ▶ 사용 엔진: MastermindLUTEngine (O(1) 캐시 가속)
 ============================================================
-[*] Heuristic (Freq) 테스트 시작 (100회)...
-[-] 결과: 평균 6.13회 | 총 소요시간: 2.16초
-[*] Shannon Entropy (Standard) 테스트 시작 (100회)...
-[-] 결과: 평균 5.79회 | 총 소요시간: 620.60초
-[*] Fast Shannon Entropy (Vectorized) 테스트 시작 (100회)...
-[-] 결과: 평균 5.96회 | 총 소요시간: 204.73초
+[*] Heuristic (Freq) 테스트 시작 (1000회)...
+[-] 결과: 평균 6.18회 | 총 소요시간: 21.13초
+[*] Fast Shannon Entropy (Vectorized) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.86회 | 총 소요시간: 46.44초
+[*] Minimax (Knuth) 테스트 시작 (1000회)...
+[-] 결과: 평균 5.95회 | 총 소요시간: 53.33초
 ```
->여전히 시간적으로는 heuristic이 압도적이지만, LUT적용으로 전반적으로 시간이 감소한 모습을 볼 수 있습니다. 그러나 이전 벤치마크와 비교해서 시간이 늘어난 부분은 LUT적용으로 2회까지 하드코딩을 1회 하드코딩으로 줄였고(2회부터 엔트로피 적용), 특히나 Fast Entropy의 경우 1회부터 바로 엔트로피 적용이나 LUT+Vectorization으로 시간이 압도적으로 빠른 것을 볼 수 있습니다.
+>여전히 시간적으로는 heuristic이 압도적이지만, LUT적용으로 전반적으로 시간이 감소한 모습을 볼 수 있습니다. 또한 여러번의 for 연산이 필요한 Entropy와 Minimax연산에서 vectorization을 통해 속도를 획기적으로 단축시켰습니다.
 ---
 
 ## Dashboard example
@@ -242,6 +243,42 @@
    --------------------------------------------------
 ```
 
+### MinimaxSolver (Knuth)
+
+```text
+==============================================================
+[MinimaxSolver] Turn 5 시각화 분석 리포트
+==============================================================
+▶ [Dash 2] 남은 정답 후보군: 6개
+▶ [Dash 3] Knuth Minimax (Worst-case) + Entropy Tie-breaker 상위 추천:
+   1. [4, 3, 6, 0] (점수: 1.0000)
+   2. [4, 6, 0, 3] (점수: 2.0000)
+   3. [4, 6, 8, 3] (점수: 2.0000)
+▶ [Dash 4] AI의 결정적 근거 (Why [4, 3, 6, 0]?):
+   [채택] [4, 3, 6, 0]를 찔렀을 때 (Worst-case 최소화 전략):
+     ├─ 어떤 판정이 나오더라도 가장 운이 나쁜 경우 ➔ 최대 1개 이하로 방어 가능!
+   [비교] 만약 최악의 수 [3, 0, 5, 2]를 찔렀다면?
+     └─ 운이 나쁠 경우 ➔ 무려 3개나 남음 (리스크 매우 높음).
+▶ [Dash 1] 자릿수별 확률 히트맵 (%) - [*]는 AI 선택
+   --------------------------------------------------
+    Digit  |   Pos 1  |  Pos 2  |  Pos 3  |  Pos 4  |
+   --------------------------------------------------
+     0     |     -    |   16.7  |   16.7  |[  33.3 ]|
+     1     |     -    |   16.7  |    -    |    -    |
+     2     |     -    |    -    |   16.7  |   16.7  |
+     3     |    16.7  |[  16.7 ]|    -    |   50.0  |
+     4     | [  66.7 ]|    -    |    -    |    -    |
+     5     |     -    |    -    |   16.7  |    -    |
+     6     |    16.7  |   33.3  |[  33.3 ]|    -    |
+     7     |     -    |    -    |    -    |    -    |
+     8     |     -    |   16.7  |   16.7  |    -    |
+     9     |     -    |    -    |    -    |    -    |
+   --------------------------------------------------
+==============================================================
+▶ 공격수: "(4, 3, 6, 0)" (계산: 0.0048s)
+◁ 수비수: "0S 2B"
+```
+
 ---
 
 ## GUI Dashboard example
@@ -265,7 +302,7 @@
 실용적인 성능 향상을 위해 다음과 같은 로직을 반영하였습니다.
 
 1. **Heuristic '1234' Strategy**: 중복 허용 시 정보량이 적은 패턴(예: 0000)을 피하기 위해 첫 턴을 '1234'로 고정하여 초기 후보군 소거 영역을 확보합니다.
-2. **Entropy 2-Turn Seed**: 연산량과 턴 수의 Trade-off를 고려하여, 연산 부하가 큰 초반 2턴은 고정 시드를 사용하고 이후 전수조사에 진입합니다.
+2. **Entropy/Minimax 2-Turn Seed**: 연산량과 턴 수의 Trade-off를 고려하여, 연산 부하가 큰 초반 2턴은 고정 시드를 사용하고 이후 전수조사에 진입합니다.
 3. **Strict Candidate Integrity**: 휴리스틱 연산 시 반드시 남은 후보군 내에서 최적해를 선택하도록 설계하여 논리적 모순 및 무한 루프를 방지합니다.
 4. **Input Validation Loop**: 인터랙티브 환경에서 사용자의 피드백 오류(S/B 합계 오류 등)를 실시간으로 검증합니다.
 5. **Data Decoupling**: 솔버의 핵심 연산 로직과 CLI 렌더링 로직을 완벽히 분리하여 연산 병목현상을 방지합니다.
@@ -279,6 +316,7 @@
 13. **Session-Isolated Logging via UUID**: 다중 접속 환경의 Race Condition을 방지하기 위해 FastAPI 라우터에서 `uuid4`를 발급하고, 코어 엔진의 수정 없이 속성 덮어씌우기(Attribute Override) 패턴을 적용하여 세션별로 로그 파일을 격리 기록합니다.
 14. **Defensive UI Rendering (Global Kill-switch)**: 비동기 JS 애니메이션 루프와 실시간 데이터 수신 간의 충돌을 방지하기 위해 렌더링 구역별 `Try-Catch` 방어막을 구축하고, 상태 모순 시 조기 차단(Early Return)하는 킬 스위치 로직을 적용했습니다.
 15. **JavaScript Obfuscation**: 프론트엔드의 핵심 자산인 D3.js 시각화 로직(`tactical_visualizer.js`)을 별도 파일로 완전 분리하고 난독화(Obfuscator)를 적용하여 비즈니스 로직 유출을 방어합니다.
+16. **Minimax (Knuth) integration**: 이 분야에서 독보적인 minimax 알고리즘 구현 및 통합하였습니다.
 
 ---
 
@@ -383,7 +421,7 @@ python simulations/self_play.py [-d]
 │   ├── game_engine.py            # 범용 N자리 피드백 엔진
 │   ├── lut_engine.py             # O(1) 가속 LUT 캐시 엔진 (4자리 전용)
 │   ├── lut_generator.py          # 초기 1억 개 데이터 세팅 스크립트
-│   └── solvers/                  # Entropy, FastEntropy, Heuristic 구현체
+│   └── solvers/                  # Entropy, FastEntropy, Heuristic, Minimax 구현체
 ├── data/                         # 자동 생성된 .npy 캐시 파일 저장소 (gitignore)
 ├── interface/                    # CLI, GUI 및 D3.js 기반 대시보드
 │   ├── command_center.html       # Command OS 프론트엔드 UI

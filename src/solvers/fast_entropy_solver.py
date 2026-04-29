@@ -147,7 +147,7 @@ class FastEntropySolver:
 
         is_lut = self.engine.__class__.__name__ == "MastermindLUTEngine"
 
-        # 1. 1턴 하드코딩 (수학적 상수 반환)
+        # 1. 2턴 하드코딩 (수학적 상수 반환)
         if turn == 1:
             # 중복 허용 시 0011 패턴이 엔트로피 효율이 높고, 중복 불가 시 0123 패턴이 높습니다.
             if self.engine.allow_duplicates:
@@ -156,14 +156,9 @@ class FastEntropySolver:
                 best_guess = tuple(int(d) for d in pattern)
             else:
                 best_guess = tuple(int(d) for d in self.start_digits[:self.digits])
-
-        # 가속 엔진이 아닐 때만 기존 하드코딩과 성능 타협(샘플링) 로직을 적용합니다.
-        if not is_lut:
-            if turn == 2:
-                next_digits = (self.start_digits[self.digits:] + self.start_digits)[:self.digits]
-                best_guess = tuple(int(d) for d in next_digits)
-            elif len(self.candidates) > 500:
-                best_guess = self.candidates[0]
+        elif turn == 2:
+            next_digits = (self.start_digits[self.digits:] + self.start_digits)[:self.digits]
+            best_guess = tuple(int(d) for d in next_digits)
 
         # 2. 전수조사 연산 (분기문 없는 깔끔한 로직)
         if best_guess is None:
