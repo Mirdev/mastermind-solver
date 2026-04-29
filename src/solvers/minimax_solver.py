@@ -1,4 +1,4 @@
-# src/solvers/fast_entropy_solver.py
+# src/solvers/minimax_solver.py
 import math
 import numpy as np
 import json
@@ -7,10 +7,11 @@ from datetime import datetime
 from itertools import permutations, product
 import random
 
-class FastEntropySolver:
+class MinimaxSolver:
     """
-    NumPy Vectorization 기반의 초고속 Shannon Entropy 솔버.
-    파이썬 반복문을 배제하고 3차원 브로드캐스팅 및 행렬 교차 연산을 사용하여 연산 속도를 극대화합니다.
+    Donald Knuth의 Minimax 전략을 최우선으로 하는 솔버.
+    가장 큰 후보군 덩어리(Worst-case)를 최소화(Minimize)하는 것을 1순위로,
+    동률 시 섀넌 엔트로피를 2순위로 사용하여 최적의 수를 결정합니다.
     """
     _candidates_cache = {}
     
@@ -54,7 +55,7 @@ class FastEntropySolver:
             "dashboard_1_heatmap": {"probabilities": probs},
             "dashboard_2_trend": {"remaining_count": total},
             "dashboard_3_evaluation": {
-                "metric_name": "초기화 완료 (Fast Mode)",
+                "metric_name": "초기화 완료",
                 "top_guesses": [],
                 "expected_splits": [],
                 "worst_split_comparison": {}
@@ -70,8 +71,8 @@ class FastEntropySolver:
     def _generate_all_candidates(self):
         cache_key = (self.engine.digits, self.engine.allow_duplicates, self.engine.allow_leading_zero)
         
-        if cache_key in FastEntropySolver._candidates_cache:
-            return FastEntropySolver._candidates_cache[cache_key][:]
+        if cache_key in MinimaxSolver._candidates_cache:
+            return MinimaxSolver._candidates_cache[cache_key][:]
 
         if self.engine.allow_duplicates:
             all_cands = list(product(range(10), repeat=self.engine.digits))
@@ -81,7 +82,7 @@ class FastEntropySolver:
         if not self.engine.allow_leading_zero:
             all_cands = [c for c in all_cands if c[0] != 0]
         
-        FastEntropySolver._candidates_cache[cache_key] = all_cands
+        MinimaxSolver._candidates_cache[cache_key] = all_cands
         return all_cands[:]
 
     def update_candidates(self, guess, feedback):
@@ -97,44 +98,38 @@ class FastEntropySolver:
             for i, digit in enumerate(cand):
                 probs[i][digit] += 1 / total
 
-        expected_splits = {}
-        if best_guess:
-            for cand in self.candidates:
-                fb = self.engine.get_feedback(cand, best_guess)
-                expected_splits[fb] = expected_splits.get(fb, 0) + 1
-        sorted_splits = sorted(expected_splits.items(), key=lambda x: x[1], reverse=True)
-        
-        worst_splits = []
-        worst_guess = None
-        if evaluation_list and len(evaluation_list) > 1:
-            worst_guess = evaluation_list[-1][0] 
-            w_splits_dict = {}
-            for cand in self.candidates:
-                fb = self.engine.get_feedback(cand, worst_guess)
-                w_splits_dict[fb] = w_splits_dict.get(fb, 0) + 1
-            worst_splits = sorted(w_splits_dict.items(), key=lambda x: x[1], reverse=True)
-        
+        expected_splits = []
+        worst_split_comparison = {}
+
+        if evaluation_list:
+            # evaluation_list는 (guess, worst_case, entropy) 형태이며 오름차순(최적->최악) 정렬되어 있음
+            best_eval = evaluation_list[0]
+            worst_eval = evaluation_list[-1]
+
+            # 피드백(스트라이크/볼) 문자열 대신, Minimax의 핵심인 worst_case 숫자 자체를 저장
+            expected_splits = [["Worst-case", best_eval[1]]]
+            worst_split_comparison = {
+                "guess": list(worst_eval[0]),
+                "splits": [["Worst-case", worst_eval[1]]]
+            }
+
         payload = {
             "turn": turn,
-            "solver_name": "FastEntropySolver",
+            "solver_name": "MinimaxSolver",
             "best_guess": list(best_guess) if best_guess else [],
             "status": status, 
             "dashboard_1_heatmap": {"probabilities": probs},
             "dashboard_2_trend": {"remaining_count": total},
             "dashboard_3_evaluation": {
-                "metric_name": "Shannon Entropy (bits)",
-                "top_guesses": [{"guess": list(g), "score": s} for g, s, _ in evaluation_list],
-                "expected_splits": sorted_splits,
-                "worst_split_comparison": { 
-                    "guess": list(worst_guess) if worst_guess else [],
-                    "splits": worst_splits
-                }
+                "metric_name": "Knuth Minimax (Worst-case) + Entropy Tie-breaker",
+                "top_guesses": [{"guess": list(g), "score": w} for g, w, _ in evaluation_list],
+                "expected_splits": expected_splits,            # 페이로드에 병합
+                "worst_split_comparison": worst_split_comparison # 페이로드에 병합
             }
         }
         
         with open(self.log_file, 'a', encoding='utf-8') as f:
             f.write(json.dumps(payload, ensure_ascii=False) + '\n')
-            
         return payload
 
     def log_state_after_feedback(self, turn, guess):
@@ -144,10 +139,8 @@ class FastEntropySolver:
     def get_best_guess(self, turn):
         eval_list = []
         best_guess = None
-
         is_lut = self.engine.__class__.__name__ == "MastermindLUTEngine"
-
-        # 1. 1턴 하드코딩 (수학적 상수 반환)
+        
         if turn == 1:
             # 중복 허용 시 0011 패턴이 엔트로피 효율이 높고, 중복 불가 시 0123 패턴이 높습니다.
             if self.engine.allow_duplicates:
@@ -157,7 +150,6 @@ class FastEntropySolver:
             else:
                 best_guess = tuple(int(d) for d in self.start_digits[:self.digits])
 
-        # 가속 엔진이 아닐 때만 기존 하드코딩과 성능 타협(샘플링) 로직을 적용합니다.
         if not is_lut:
             if turn == 2:
                 next_digits = (self.start_digits[self.digits:] + self.start_digits)[:self.digits]
@@ -165,49 +157,35 @@ class FastEntropySolver:
             elif len(self.candidates) > 500:
                 best_guess = self.candidates[0]
 
-        # 2. 전수조사 연산 (분기문 없는 깔끔한 로직)
+        # 2. 미니맥스 전수 조사
         if best_guess is None:
-            if is_lut:
-                # LUT 전용 슬라이싱 연산
-                cand_idx = np.array([c[0]*1000 + c[1]*100 + c[2]*10 + c[3] for c in self.candidates], dtype=np.int32)
-                N = len(cand_idx)
-                grid = self.engine.lut_matrix[np.ix_(cand_idx, cand_idx)]
+            C = np.array(self.candidates, dtype=np.int8)
+            N = len(C)
+            
+            # 피드백 매트릭스 계산 (벡터화)
+            strikes = (C[:, None, :] == C[None, :, :]).sum(axis=2)
+            H = (C[..., None] == np.arange(10)).sum(axis=1)
+            matches = np.minimum(H[:, None, :], H[None, :, :]).sum(axis=2)
+            grid = (strikes << 4) | (matches - strikes)
+            
+            for j in range(N):
+                _, counts = np.unique(grid[:, j], return_counts=True)
                 
-                for j in range(N):
-                    _, counts = np.unique(grid[:, j], return_counts=True)
-                    p = counts / N
-                    entropy = -np.sum(p * np.log2(p))
+                # [핵심] Minimax 지표: 최악의 경우 남는 후보 수
+                worst_case = int(np.max(counts))
+                
+                # [타이 브레이커] Entropy 지표
+                p = counts / N
+                entropy = -np.sum(p * np.log2(p))
+                
+                eval_list.append((self.candidates[j], worst_case, float(entropy)))
 
-                    # [추가] NumPy를 활용하여 최악의 경우(가장 큰 덩어리) 도출
-                    worst_case = int(np.max(counts))
-                    eval_list.append((self.candidates[j], float(entropy), worst_case))
-                    
-            else:
-                # N자리 범용 브로드캐스팅 연산
-                C = np.array(self.candidates, dtype=np.int8)
-                N = len(C)
-                
-                strikes = (C[:, None, :] == C[None, :, :]).sum(axis=2)
-                H = (C[..., None] == np.arange(10)).sum(axis=1)
-                matches = np.minimum(H[:, None, :], H[None, :, :]).sum(axis=2)
-                balls = matches - strikes
-                
-                grid = (strikes << 4) | balls
-                
-                for j in range(N):
-                    _, counts = np.unique(grid[:, j], return_counts=True)
-                    p = counts / N
-                    entropy = -np.sum(p * np.log2(p))
-                    
-                    # [추가] NumPy를 활용하여 최악의 경우(가장 큰 덩어리) 도출
-                    worst_case = int(np.max(counts))
-                    eval_list.append((self.candidates[j], float(entropy), worst_case))
-
-            eval_list.sort(key=lambda x: (round(x[1], 6), -x[2]), reverse=True)
+            # 정렬 전략: 1순위 워스트 케이스 최소화(오름차순), 2순위 엔트로피 최대화(내림차순)
+            # worst_case는 작을수록 좋으므로 그대로(오름차순), entropy는 클수록 좋으므로 마이너스(-) 처리 후 정렬
+            eval_list.sort(key=lambda x: (x[1], -round(x[2], 6)))
             best_guess = eval_list[0][0]
 
         payload = self._extract_dashboard_data(turn, best_guess, eval_list, "processing")
-        
         if self.observer_callback:
             self.observer_callback(payload)
             

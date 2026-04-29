@@ -14,6 +14,7 @@ from src.game_engine import MastermindEngine
 from src.solvers.entropy_solver import EntropySolver
 from src.solvers.heuristic_solver import HeuristicSolver
 from src.solvers.fast_entropy_solver import FastEntropySolver
+from src.solvers.minimax_solver import MinimaxSolver
 from interface.cli_dashboard import CLIDashboard  # 대시보드 모듈
 
 def get_user_choice(prompt, default_val):
@@ -48,10 +49,10 @@ def run_self_play(use_dashboard=False):
     # 대규모 연산이므로 LUT 사용을 기본값(y)으로 추천
     use_lut = get_user_choice("3) 초고속 LUT 가속 엔진 사용?", "y")
     
-    print("\n[솔버 선택] 1: Entropy | 2: Heuristic | 3: Fast-Entropy | r: Random")
+    print("\n[솔버 선택] 1: Entropy | 2: Heuristic | 3: Fast-Entropy | 4: Minimax | r: Random")
     solver_choice = input("선택 (기본 1): ").lower()
     if solver_choice == 'r':
-        solver_choice = random.choice(["1", "2"])
+        solver_choice = random.choice(["1", "2", "3", "4"])
     
     # [핵심 로직] 4자리 제한 판정 및 엔진 분기
     if use_lut and digits != 4:
@@ -68,12 +69,14 @@ def run_self_play(use_dashboard=False):
         engine = MastermindEngine(digits=digits, allow_duplicates=allow_dup, allow_leading_zero=allow_zero)
 
     callback = dashboard.receive_data if dashboard else None
-    if solver_choice == "2":
-        solver = HeuristicSolver(engine, observer_callback=callback)
-    elif solver_choice == "1":
+    if solver_choice == "1":
         solver = EntropySolver(engine, observer_callback=callback)
-    else:
+    elif solver_choice == "2":
+        solver = HeuristicSolver(engine, observer_callback=callback)
+    elif solver_choice == "3":
         solver = FastEntropySolver(engine, observer_callback=callback)
+    else:
+        solver = MinimaxSolver(engine, observer_callback=callback)
 
     # 2. 정답 생성 (설정된 규칙에 맞는 후보군 중 랜덤 선택)
     secret_str = random.choice(solver.candidates)

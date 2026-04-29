@@ -13,6 +13,7 @@ from src.lut_engine import MastermindLUTEngine
 from src.solvers.entropy_solver import EntropySolver
 from src.solvers.heuristic_solver import HeuristicSolver
 from src.solvers.fast_entropy_solver import FastEntropySolver
+from src.solvers.minimax_solver import MinimaxSolver
 
 app = FastAPI(title="Mastermind AI Tactical API")
 
@@ -59,8 +60,13 @@ def start_game(config: GameConfig):
         
     if config.solver_type == "heuristic":
         solver = HeuristicSolver(engine)
-    else:
+    elif config.solver_type == "minimax":
+        solver = MinimaxSolver(engine)
+    elif config.solver_type == "fast_entropy":
         solver = FastEntropySolver(engine)
+    else:
+        # 조용히 기본값으로 넘어가는 대신 에러를 반환하여 안전성 확보
+        raise HTTPException(status_code=400, detail=f"Unsupported solver_type: {config.solver_type}")
 
     log_dir = Path("logs")
     log_dir.mkdir(exist_ok=True)

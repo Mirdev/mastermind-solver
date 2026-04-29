@@ -177,6 +177,7 @@
                 <div class="chip-group">
                     <input type="radio" name="opt_solver" id="sol_ent" value="fast_entropy" checked onchange="handleSolverChange()"><label class="chip-label" id="lbl_sol_ent" for="sol_ent">ENTROPY</label>
                     <input type="radio" name="opt_solver" id="sol_heu" value="heuristic" onchange="handleSolverChange()"><label class="chip-label" id="lbl_sol_heu" for="sol_heu">HEURISTIC</label>
+                    <input type="radio" name="opt_solver" id="sol_mini" value="minimax" onchange="handleSolverChange()"><label class="chip-label" id="lbl_sol_mini" for="sol_mini">MINIMAX</label>
                 </div>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -311,6 +312,7 @@
             }
         }
 
+        // [수정됨] Minimax 연산량 제어 및 라벨 처리 추가
         function handleDigitChange() {
             var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
             
@@ -318,7 +320,6 @@
             document.getElementById('opp_guess').maxLength = digits;
             renderFeedbackSockets(digits);
 
-            // 대시보드 1번 타이틀 동적 업데이트
             var dash1Title = document.getElementById('dash1-title');
             if(dash1Title) {
                 dash1Title.innerText = `[Dash 1] 확률장 ${digits}-Chamber`;
@@ -326,26 +327,37 @@
 
             setPointerEvents('lbl_sol_ent', true);
             setPointerEvents('lbl_sol_heu', true);
+            setPointerEvents('lbl_sol_mini', true);
             setPointerEvents('lbl_lut_o', true);
             setPointerEvents('lbl_lut_x', true);
 
+            var currentSolver = document.querySelector('input[name="opt_solver"]:checked').value;
+
             if (digits === 3) {
-                setButtonState('sol_ent', 'sol_heu');
-                setButtonState('lut_x', 'lut_o');
                 setPointerEvents('lbl_sol_heu', false); 
                 setPointerEvents('lbl_lut_o', false);   
-            } else if (digits === 4) {
-                setButtonState('sol_ent', 'sol_heu');
-                setButtonState('lut_o', 'lut_x');
-            } else if (digits === 5) {
-                setButtonState('sol_heu', 'sol_ent');
                 setButtonState('lut_x', 'lut_o');
+                // 휴리스틱이 막히므로, 휴리스틱을 선택 중이었다면 엔트로피로 자동 이동
+                if (currentSolver === 'heuristic') document.getElementById('sol_ent').checked = true;
+            } else if (digits === 4) {
+                // 4자리일 땐 handleSolverChange가 알아서 LUT 상태를 컨트롤함
+            } else if (digits === 5) {
                 setPointerEvents('lbl_sol_ent', false); 
+                // 5자리일 땐 Minimax도 잠금 (연산량 과부하 방지)
+                setPointerEvents('lbl_sol_mini', false); 
                 setPointerEvents('lbl_lut_o', false);   
+                setButtonState('lut_x', 'lut_o');
+                
+                // 막혀있는 엔트로피나 미니맥스를 선택 중이었다면, 가장 가벼운 휴리스틱으로 자동 강제 이동
+                if (currentSolver === 'fast_entropy' || currentSolver === 'minimax') {
+                    document.getElementById('sol_heu').checked = true;
+                }
             }
+            // 최종적으로 솔버 상태 변경 로직(LUT 동기화)을 한번 더 태워줌
+            handleSolverChange();
         }
 
-        // [완벽 연동 버전] 솔버 변경 시 LUT 스위치 연동 함수
+        // 솔버 변경 시 LUT 스위치 연동 함수
         function handleSolverChange() {
             var solver = document.querySelector('input[name="opt_solver"]:checked').value;
             var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
