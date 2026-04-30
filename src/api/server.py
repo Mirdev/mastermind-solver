@@ -7,6 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from fastapi.responses import FileResponse
+import requests
 
 from src.game_engine import MastermindEngine
 from src.lut_engine import MastermindLUTEngine
@@ -256,3 +257,14 @@ def list_logs():
         return {"files": []}
     files = sorted(log_dir.glob("*.jsonl"), key=lambda p: p.stat().st_mtime, reverse=True)
     return {"files": [f.name for f in files]}
+
+@app.get("/api/kasi/")
+def get_kasi_proxy(yyyy: int):
+    """
+    브라우저 대신 서버가 천문연 API를 호출하여 CORS를 우회합니다.
+    """
+    url = f"https://astro.kasi.re.kr/life/lunc?yyyy={yyyy}&mm=01&dd=01"
+    try:
+        response = requests.get(url, timeout=5)
+        return response.json()
+    except Exception as e:
