@@ -21,7 +21,7 @@ app = FastAPI(title="Mastermind AI Tactical API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,   # [수정] True에서 False로 변경 (400 에러의 원인)
     allow_methods=["*"],
     allow_headers=["*"],
 )
