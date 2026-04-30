@@ -268,3 +268,4 @@ def get_kasi_proxy(yyyy: int):
         response = requests.get(url, timeout=5)
         return response.json()
     except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Proxy Error: {str(e)}")
