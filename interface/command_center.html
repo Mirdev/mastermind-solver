@@ -7,24 +7,39 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
         
-        /* 100vh 대신 100dvh를 사용하여 모바일 주소창 영역을 완벽하게 계산합니다. */
         body { margin: 0; padding: 0; background-color: #050914; color: #8ab4f8; font-family: 'Share Tech Mono', monospace; display: flex; height: 100dvh; overflow: hidden; box-sizing: border-box; }
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #050914; } ::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 3px; }
         * { box-sizing: inherit; }
         
-        /* 히스토리 슬라이드 패널 스타일 적용 */
         #history-panel { position: fixed; top: 0; left: -200px; width: 200px; height: 100dvh; background-color: #080B14; border-right: 1px solid #161F33; transition: left 0.3s ease-in-out; z-index: 1000; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.8); }
         #history-panel.history-open { left: 0; }
         .sidebar-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
         .sidebar-content h2 { font-size: 0.95rem; margin: 0; color: #38BDF8; text-shadow: 0 0 5px rgba(56, 189, 248, 0.4); text-align: left; border: none; padding: 0;}
         
-        /* 화살표 위치 맨 위로 이동 */
         #history-toggle-btn { position: absolute; top: 20px; right: -30px; width: 30px; height: 60px; background-color: #1E293B; color: #38BDF8; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 0 8px 8px 0; border: 1px solid #161F33; border-left: none; box-shadow: 2px 0 5px rgba(0,0,0,0.5); z-index: 1001; }
         
         #file-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; flex: 1; padding-right: 5px;}
         .log-btn { background: #0A0F1C; color: #94A3B8; border: 1px solid #161F33; padding: 8px; border-radius: 4px; font-size: 0.75rem; cursor: pointer; text-align: left; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
         .log-btn:hover { border-color: #38BDF8; color: #38BDF8;}
         .log-btn.active { background: rgba(56, 189, 248, 0.15); color: #38BDF8; border-color: #38BDF8; box-shadow: inset 0 0 8px rgba(56, 189, 248, 0.2);}
+
+        .pulse-box-red {
+            animation: pulseBoxRedAnim 2s infinite;
+        }
+        @keyframes pulseBoxRedAnim {
+            0% { box-shadow: 0 0 5px rgba(244, 63, 94, 0.2); border-color: rgba(244, 63, 94, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(244, 63, 94, 0.8); border-color: rgba(244, 63, 94, 1); }
+            100% { box-shadow: 0 0 5px rgba(244, 63, 94, 0.2); border-color: rgba(244, 63, 94, 0.5); }
+        }
+
+        .pulse-target {
+            animation: pulseTargetAnim 2s infinite;
+        }
+        @keyframes pulseTargetAnim {
+            0% { box-shadow: 0 0 5px rgba(0, 240, 255, 0.2); border-color: rgba(0, 240, 255, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(0, 240, 255, 0.8); border-color: rgba(0, 240, 255, 1); }
+            100% { box-shadow: 0 0 5px rgba(0, 240, 255, 0.2); border-color: rgba(0, 240, 255, 0.5); }
+        }
         
         #d3-canvas-area { flex: 2.9; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at 50% 0%, #0B1120 0%, #030509 100%); border-right: 2px solid rgba(59, 130, 246, 0.3); margin-left: 0; }
         .header-title { font-size: 1.2rem; font-weight: bold; margin: 0; text-align: center; color: #F8FAFC; letter-spacing: 1px; font-family: 'Orbitron';}
@@ -57,7 +72,7 @@
         @keyframes slideRight { 0% { transform: translateX(30px); opacity: 0; filter: blur(2px); } 100% { transform: translateX(0); opacity: 1; filter: blur(0); } }
         @keyframes pulseVS { 0% { transform: scale(1); text-shadow: none; } 50% { transform: scale(1.2); text-shadow: 0 0 10px #F43F5E; color: #F43F5E; } 100% { transform: scale(1); text-shadow: none; } }
 
-        #control-panel { flex: 1.1; padding: 20px 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); height: 100dvh; }
+        #control-panel { flex: 1.1; padding: 20px 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); height: 100dvh; transition: background-color 0.5s ease; }
         h2.panel-title { color: #00f0ff; text-transform: uppercase; letter-spacing: 4px; text-align: center; margin-top: 0; padding-bottom: 15px; font-family: 'Orbitron', sans-serif; border-bottom: 2px solid rgba(0, 240, 255, 0.3); }
         .step-container { display: none; flex-direction: column; gap: 20px; } .step-container.active { display: flex; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
@@ -73,46 +88,65 @@
         input[type="text"], input[type="number"] { background: rgba(0, 0, 0, 0.5); color: #00f0ff; border: 1px solid #1f2937; padding: 12px; font-family: 'Orbitron', sans-serif; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
         input[type="text"]:focus { border-color: #00f0ff; box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
         
-        #secret-banner { display: none; background: rgba(244, 63, 94, 0.1); border: 1px solid #f43f5e; padding: 12px; text-align: center; margin-bottom: 20px; color: #f43f5e; font-weight: bold; font-family: 'Orbitron'; letter-spacing: 3px; font-size: 16px; box-shadow: 0 0 15px rgba(244, 63, 94, 0.2); }
+        .responsive-input {
+            width: 100%; box-sizing: border-box; text-align: center; 
+            font-size: clamp(16px, 4vw, 24px); letter-spacing: clamp(5px, 2vw, 12px); 
+            font-family: 'Orbitron', monospace; word-break: break-all; white-space: normal;
+        }
+
+        #secret-banner {
+            display: none; background: rgba(10, 14, 23, 0.8); border: 1px solid #f43f5e; padding: 15px; 
+            text-align: center; margin-bottom: 20px; box-shadow: 0 0 10px rgba(244, 63, 94, 0.15);
+        }
+        .secret-label { color: #f43f5e; font-weight: bold; font-family: 'Orbitron'; letter-spacing: 2px; font-size: 15px; }
+        .secret-value { color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.8); font-weight: bold; font-family: 'Orbitron'; letter-spacing: 4px; font-size: 20px; vertical-align: middle; }
 
         #auto-overlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(5, 9, 20, 0.6); z-index: 100; backdrop-filter: blur(3px); flex-direction: column; justify-content: center; align-items: center; text-align: center; }
         .spinner { width: 50px; height: 50px; border: 4px solid rgba(56, 189, 248, 0.1); border-radius: 50%; border-top: 4px solid #38BDF8; animation: spin 1s cubic-bezier(0.5, 0.1, 0.4, 0.9) infinite; margin-bottom: 20px; }
         @keyframes spin { 100% { transform: rotate(360deg); } }
 
-        /* ========================================================
-           [ 컴팩트 화면 대응: 좌우 유지 + 대시보드 1열 4등분 픽스 ]
-        ======================================================== */
+        /* 턴 알림 오버레이 */
+        #turn-notification {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 500; background: rgba(5, 9, 20, 0.85); flex-direction: column;
+            align-items: center; justify-content: center; transition: opacity 0.4s ease;
+            backdrop-filter: blur(5px);
+        }
+        .turn-text { font-family: 'Orbitron'; font-size: 24px; font-weight: bold; letter-spacing: 3px; text-align: center; }
+
+        /* 강조 펄스 이펙트 */
+        .pulse-area {
+            border: 2px dashed rgba(56, 189, 248, 0.5); padding: 25px 15px 15px 15px; border-radius: 8px; position: relative;
+            animation: pulseAreaAnim 2s infinite; margin-top: 15px;
+        }
+        @keyframes pulseAreaAnim {
+            0% { box-shadow: 0 0 5px rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.8); border-color: rgba(56, 189, 248, 1); }
+            100% { box-shadow: 0 0 5px rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.5); }
+        }
+        
+        .pulse-btn-cyan { animation: pulseBtnCyanAnim 2s infinite; border-color: #00f0ff; color: #00f0ff; }
+        .pulse-btn-cyan:hover { background-color: rgba(0, 240, 255, 0.1); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
+        @keyframes pulseBtnCyanAnim {
+            0% { box-shadow: 0 0 5px #00f0ff; }
+            50% { box-shadow: 0 0 20px #00f0ff; }
+            100% { box-shadow: 0 0 5px #00f0ff; }
+        }
+
+        .pulse-btn-red { animation: pulseBtnRedAnim 2s infinite; border-color: #f43f5e; color: #f43f5e; }
+        .pulse-btn-red:hover { background-color: rgba(244, 63, 94, 0.1); box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
+        @keyframes pulseBtnRedAnim {
+            0% { box-shadow: 0 0 5px #f43f5e; }
+            50% { box-shadow: 0 0 20px #f43f5e; }
+            100% { box-shadow: 0 0 5px #f43f5e; }
+        }
+
         @media screen and (max-width: 1024px) {
-            .metrics-row {
-                flex-wrap: wrap;
-                height: auto;
-                gap: 4px;
-            }
-            .metric-card {
-                flex: 1 1 30%;
-                height: 45px;
-            }
-
-            /* 그리드를 1열 종대로 세우고 높이를 컨테이너 안에서 4등분 제한 */
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-                grid-template-rows: repeat(4, minmax(0, 1fr)); 
-                overflow: hidden; /* 영역 밖으로 삐져나가는 것 차단 */
-                padding-right: 0;
-                gap: 8px;
-            }
-
-            /* 4등분 구역 내부에서 높이 100%를 강제하여 dash3가 전체 화면을 밀어내는 것을 방지 */
-            .chart-container {
-                min-height: 0 !important;
-                height: 100%;
-                padding: 8px;
-            }
-            
-            #dash1, #dash2, #dash3, #dash4 {
-                flex: 1;
-                min-height: 0 !important;
-            }
+            .metrics-row { flex-wrap: wrap; height: auto; gap: 4px; }
+            .metric-card { flex: 1 1 30%; height: 45px; }
+            .dashboard-grid { grid-template-columns: 1fr; grid-template-rows: repeat(4, minmax(0, 1fr)); overflow: hidden; padding-right: 0; gap: 8px; }
+            .chart-container { min-height: 0 !important; height: 100%; padding: 8px; }
+            #dash1, #dash2, #dash3, #dash4 { flex: 1; min-height: 0 !important; }
         }
     </style>
 </head>
@@ -151,6 +185,10 @@
     <script src="tactical_visualizer.js"></script>
 
     <div id="control-panel">
+        <div id="turn-notification">
+            <div class="turn-text" id="turn-notification-text"></div>
+        </div>
+
         <div id="auto-overlay">
             <div class="spinner"></div>
             <div style="color: #38BDF8; font-family: 'Orbitron'; font-size: 18px; letter-spacing: 2px;">REAL-TIME SIMULATING...</div>
@@ -160,8 +198,13 @@
 
         <h2 class="panel-title">COMMAND OS</h2>
         
-        <div id="secret-banner">> MY SECRET : <span id="banner-secret-val" style="color: #fff; text-shadow: 0 0 10px #fff;"></span> <</div>
+        <div id="secret-banner">
+            <span class="secret-label">> MY SECRET : </span>
+            <span id="banner-secret-val" class="secret-value"></span>
+            <span class="secret-label"> <</span>
+        </div>
 
+        <!-- 셋업 페이즈 -->
         <div id="step-setup" class="step-container active">
             <div>
                 <div class="label-title">> OPERATION_MODE</div>
@@ -209,53 +252,76 @@
                     <input type="radio" name="opt_atk" id="atk_ai" value="ai" checked><label class="chip-label" for="atk_ai">ATTACK FIRST</label>
                     <input type="radio" name="opt_atk" id="atk_me" value="me"><label class="chip-label" for="atk_me">DEFENSE FIRST</label>
                 </div>
-                <div style="margin-top: 15px;"><div class="label-title">> MY SECRET KEY</div><input type="text" id="my_secret" placeholder="[ _ _ _ _ ]" maxlength="4" style="text-align: center; font-size: 20px; letter-spacing: 10px;"></div>
+                <div style="margin-top: 15px;"><div class="label-title">> MY SECRET KEY</div><input type="text" id="my_secret" class="responsive-input" placeholder="[ _ _ _ _ ]" maxlength="4"></div>
             </div>
-            <button class="btn-action" style="margin-top: 20px; width: 100%;" onclick="initializeEngine()">[ INITIALIZE SEQUENCE ]</button>
+            <button class="btn-action pulse-btn-cyan" style="margin-top: 20px; width: 100%;" onclick="initializeEngine()">[ INITIALIZE SEQUENCE ]</button>
         </div>
 
-        <div id="step-attack" class="step-container">
-            <div style="text-align: center; color: #60a5fa; font-family: 'Orbitron';">> MY ATTACK TURN <span id="display-turn" style="color: #fff; font-weight: bold; font-size: 20px;">1</span> <</div>
+        <!-- [A] 공격 페이즈 1: 추측 숫자 확인 화면 -->
+        <div id="step-attack-1" class="step-container">
+            <div style="text-align: center; color: #60a5fa; font-family: 'Orbitron';">> MY ATTACK TURN <span id="display-turn-1" style="color: #fff; font-weight: bold; font-size: 20px;">1</span> <</div>
             <div style="text-align: center; color: #94A3B8; font-size: 12px; margin-top: -15px; margin-bottom: 5px;">상대방에게 아래 추천 숫자를 공격하십시오.</div>
             
-            <div class="target-display" id="ai-target-guess">_ _ _ _</div>
+            <div class="target-display pulse-target" id="ai-target-guess-1">_ _ _ _</div>
             
-            <div><div class="label-title">> STRIKE MATCH <</div>
-                <div class="chip-group" id="strike-sockets"></div>
-            </div>
-            <div style="margin-top: 10px;"><div class="label-title">> BALL MATCH <</div>
-                <div class="chip-group" id="ball-sockets"></div>
-            </div>
-            
-            <button class="btn-action" style="margin-top: 20px; width: 100%;" onclick="submitFeedback()">[ TRANSMIT FEEDBACK ]</button>
+            <button class="btn-action pulse-btn-cyan" style="margin-top: 20px; width: 100%;" onclick="goToAttackFeedback()">[ NEXT ]</button>
         </div>
 
-        <div id="step-defense" class="step-container">
-            <div style="text-align: center; color: #f43f5e; font-family: 'Orbitron';">> OPPONENT'S ATTACK TURN <span id="defense-turn" style="color: #fff; font-weight: bold; font-size: 20px;">1</span> <</div>
+        <!-- [B] 공격 페이즈 2: 피드백 입력 화면 -->
+        <!-- 이전 화면의 1234 노출 제거, 전송 버튼 펄스 제거 -->
+        <div id="step-attack-2" class="step-container">
+            <div style="text-align: center; color: #60a5fa; font-family: 'Orbitron';">> MY ATTACK TURN <span id="display-turn-2" style="color: #fff; font-weight: bold; font-size: 20px;">1</span> <</div>
+            <div style="text-align: center; color: #94A3B8; font-size: 12px; margin-top: -15px; margin-bottom: 5px;">상대방의 피드백을 입력하십시오.</div>
+            
+            <div id="feedback-area" class="pulse-area" style="margin-top: 5px;">
+                <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #050914; padding: 0 10px; color: #38BDF8; font-size: 12px; font-weight: bold; white-space: nowrap;">> 여기를 누르세요 <</div>
+                <div><div class="label-title">> STRIKE MATCH <</div>
+                    <div class="chip-group" id="strike-sockets"></div>
+                </div>
+                <div style="margin-top: 10px;"><div class="label-title">> BALL MATCH <</div>
+                    <div class="chip-group" id="ball-sockets"></div>
+                </div>
+            </div>
+            
+            <button class="btn-action pulse-btn-cyan" style="margin-top: 20px; width: 100%;" onclick="submitFeedback()">[ TRANSMIT FEEDBACK ]</button>
+        </div>
+
+        <!-- [C] 방어 페이즈 1: 방어 숫자 입력 화면 -->
+        <!-- 입력칸 펄스 없음, 버튼에만 펄스 적용 -->
+        <div id="step-defense-1" class="step-container">
+            <div style="text-align: center; color: #f43f5e; font-family: 'Orbitron';">> OPPONENT'S ATTACK TURN <span id="defense-turn-1" style="color: #fff; font-weight: bold; font-size: 20px;">1</span> <</div>
             <div style="margin-top: 10px;">
-                <div class="label-title">> OPPONENT'S GUESS (상대방이 부른 숫자)</div>
-                <input type="text" id="opp_guess" placeholder="[ _ _ _ _ ]" maxlength="4" style="width: 100%; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 15px;">
+                <div class="label-title" style="color: #60a5fa;">> OPPONENT'S GUESS (상대방이 부른 숫자)</div>
+                <input type="text" id="opp_guess" class="responsive-input" placeholder="[ _ _ _ _ ]" maxlength="4">
             </div>
-            <button class="btn-action" id="btn-calc-defense" style="margin-top: 20px; border-color: #f43f5e; color: #f43f5e; width: 100%;" onclick="calculateDefense()">[ CALCULATE IMPACT ]</button>
-
-            <div id="defense-result-box" style="display: none; margin-top: 15px; text-align: center; border: 1px solid #10b981; padding: 20px; background: rgba(16, 185, 129, 0.1);">
-                <div style="color: #10b981; font-weight: bold; margin-bottom: 15px; letter-spacing: 2px;">> SYSTEM FEEDBACK <</div>
-                <div style="font-size: 32px; font-family: 'Orbitron'; color: #fff;"><span id="def-res-s" style="color: #3b82f6;">0</span> S <span style="font-size:20px;color:#444">/</span> <span id="def-res-b" style="color: #f59e0b;">0</span> B</div>
-                <div style="font-size: 11px; color: #94A3B8; margin-top: 10px;">상대방에게 위 결과를 전달하십시오.</div>
-                <button class="btn-action" style="margin-top: 20px; width: 100%; border-color: #10b981; color: #10b981;" onclick="nextPhaseAfterDefense()">[ PROCEED TO NEXT PHASE ]</button>
-            </div>
+            
+            <button class="btn-action pulse-btn-red" id="btn-calc-defense" style="margin-top: 20px; width: 100%;" onclick="calculateDefense()">[ CALCULATE IMPACT ]</button>
         </div>
 
+        <!-- [D] 방어 페이즈 2: 수비 결과 화면 -->
+        <!-- 이전 입력 정보(OPPONENT'S GUESS) 제거, 박스 펄스 없음, 버튼에만 펄스 적용 -->
+        <div id="step-defense-2" class="step-container">
+            <div style="text-align: center; color: #f43f5e; font-family: 'Orbitron';">> OPPONENT'S ATTACK TURN <span id="defense-turn-2" style="color: #fff; font-weight: bold; font-size: 20px;">1</span> <</div>
+            
+            <div id="defense-result-box" class="pulse-box-red" style="margin-top: 15px; text-align: center; border: 1px solid #f43f5e; padding: 20px; background: rgba(244, 63, 94, 0.1);">
+                <div style="color: #f43f5e; font-weight: bold; margin-bottom: 15px; letter-spacing: 2px;">> SYSTEM FEEDBACK <</div>
+                <div style="font-size: 32px; font-family: 'Orbitron'; color: #fff;"><span id="def-res-s" style="color: #38BDF8;">0</span> S <span style="font-size:20px;color:#444">/</span> <span id="def-res-b" style="color: #f59e0b;">0</span> B</div>
+                <div style="font-size: 11px; color: #94A3B8; margin-top: 10px;">상대방에게 위 결과를 전달하십시오.</div>
+            </div>
+            
+            <button class="btn-action pulse-btn-red" style="margin-top: 20px; width: 100%;" onclick="nextPhaseAfterDefense()">[ PROCEED TO NEXT PHASE ]</button>
+        </div>
+
+        <!-- 종료 페이즈 -->
         <div id="step-end" class="step-container">
             <div style="text-align: center; color: #f59e0b; font-family: 'Orbitron'; font-size: 18px; font-weight: bold; letter-spacing: 2px;">> OPERATION COMPLETE <</div>
             <div id="end-result" style="text-align: center; font-size: 28px; font-weight: 900; color: #fff; margin: 20px 0; text-shadow: 0 0 15px rgba(255,255,255,0.5); font-family: 'Orbitron'; line-height: 1.5;">WIN</div>
             <div style="text-align: center; color: #94A3B8; font-size: 14px;">TOTAL ELAPSED TURNS : <span id="end-turns" style="color: #38BDF8; font-size: 24px; font-weight: bold;">0</span></div>
-            <button class="btn-action" style="margin-top: 30px; width: 100%; border-color: #38BDF8; color: #38BDF8;" onclick="resetConsole()">[ REPLAY ]</button>
+            <button class="btn-action pulse-btn-cyan" style="margin-top: 30px; width: 100%; border-color: #38BDF8; color: #38BDF8;" onclick="resetConsole()">[ REPLAY ]</button>
         </div>
     </div>
 
     <script>
-        // 전역 상태 변수를 var로 선언 (초기화 에러 방지)
         var isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         window.API_BASE = isLocal ? "http://127.0.0.1:8000" : "";
         var currentSessionId = null;
@@ -265,7 +331,6 @@
         var localTurn = 1;
         var nextAiGuess = [];
 
-        // 슬라이드 패널 이벤트 리스너 등록
         document.addEventListener('DOMContentLoaded', function() {
             const historyPanel = document.getElementById('history-panel');
             const historyToggleBtn = document.getElementById('history-toggle-btn');
@@ -288,6 +353,24 @@
                 }
             });
         });
+
+        function showTurnNotification(msg, color, callback) {
+            var overlay = document.getElementById('turn-notification');
+            var text = document.getElementById('turn-notification-text');
+            text.innerText = msg;
+            text.style.color = color;
+            overlay.style.display = 'flex';
+            void overlay.offsetWidth; 
+            overlay.style.opacity = '1';
+
+            setTimeout(function() {
+                overlay.style.opacity = '0';
+                setTimeout(function() {
+                    overlay.style.display = 'none';
+                    if(callback) callback();
+                }, 400); 
+            }, 1200); 
+        }
 
         function renderFeedbackSockets(digits) {
             var sHtml = '', bHtml = '';
@@ -316,7 +399,10 @@
         function handleDigitChange() {
             var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
             
+            var dashes = Array(digits).fill('_').join(' ');
+            document.getElementById('my_secret').placeholder = `[ ${dashes} ]`;
             document.getElementById('my_secret').maxLength = digits;
+            document.getElementById('opp_guess').placeholder = `[ ${dashes} ]`;
             document.getElementById('opp_guess').maxLength = digits;
             renderFeedbackSockets(digits);
 
@@ -325,28 +411,22 @@
                 dash1Title.innerText = `[Dash 1] 확률장 ${digits}-Chamber`;
             }
 
-            // 초기화: 우선 모든 버튼의 잠금을 해제합니다.
             setPointerEvents('lbl_sol_ent', true);
             setPointerEvents('lbl_sol_heu', true);
             setPointerEvents('lbl_sol_mini', true);
             setPointerEvents('lbl_lut_o', true);
             setPointerEvents('lbl_lut_x', true);
 
-            // 기획 의도에 맞춘 하드코딩 기본값 리셋
             if (digits === 3) {
-                // 3자리: 기본값 엔트로피, LUT OFF 강제
                 document.getElementById('sol_ent').checked = true;
                 setButtonState('lut_x', 'lut_o');
-                setPointerEvents('lbl_lut_o', false); // LUT ON 잠금
+                setPointerEvents('lbl_lut_o', false); 
             } else if (digits === 4) {
-                // 4자리: 기본값 엔트로피, LUT ON 강제 (모든 옵션 조작 가능)
                 document.getElementById('sol_ent').checked = true;
                 setButtonState('lut_o', 'lut_x');
             } else if (digits === 5) {
-                // 5자리: 기본값 휴리스틱, LUT OFF 강제
                 document.getElementById('sol_heu').checked = true;
                 setButtonState('lut_x', 'lut_o');
-                // 연산량 제어를 위해 엔트로피, 미니맥스, LUT ON 잠금
                 setPointerEvents('lbl_sol_ent', false); 
                 setPointerEvents('lbl_sol_mini', false); 
                 setPointerEvents('lbl_lut_o', false);   
@@ -355,12 +435,9 @@
             handleSolverChange();
         }
 
-        // [수정 완료] 4자리 환경에서는 솔버 변경이 LUT 활성화 상태에 전혀 개입하지 않습니다.
         function handleSolverChange() {
             var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
-
             if (digits === 4) {
-                // 어떠한 솔버를 누르더라도 LUT ON/OFF 버튼을 자유롭게 조작할 수 있도록 보장합니다.
                 setPointerEvents('lbl_lut_o', true);
             }
         }
@@ -377,22 +454,35 @@
             document.getElementById('interactive-options').style.display = isInt ? 'block' : 'none';
         }
 
+        // [A] 공격 페이즈 1: 타겟 제시
         function showAttackPhase() {
-            document.getElementById('display-turn').innerText = localTurn;
-            document.getElementById('ai-target-guess').innerText = nextAiGuess.join(' ');
-            document.getElementById('s0').checked = true; document.getElementById('b0').checked = true;
-            switchStep('step-attack');
+            document.getElementById('control-panel').style.backgroundColor = 'rgba(10, 14, 23, 0.95)';
+            document.getElementById('display-turn-1').innerText = localTurn;
+            document.getElementById('ai-target-guess-1').innerText = nextAiGuess.join(' ');
+            
+            switchStep('step-attack-1'); 
+            showTurnNotification("사용자님의 공격 차례입니다", "#38BDF8");
         }
 
+        // [B] 공격 페이즈 2: 피드백 입력 (중복정보 배제)
+        function goToAttackFeedback() {
+            document.getElementById('display-turn-2').innerText = localTurn;
+            document.getElementById('s0').checked = true; document.getElementById('b0').checked = true;
+            switchStep('step-attack-2');
+        }
+
+        // [C] 방어 페이즈 1: 타겟 수신
         function showDefensePhase() {
-            document.getElementById('defense-turn').innerText = localTurn;
+            document.getElementById('control-panel').style.backgroundColor = 'rgba(30, 10, 15, 0.95)';
+            document.getElementById('defense-turn-1').innerText = localTurn;
             document.getElementById('opp_guess').value = "";
-            document.getElementById('btn-calc-defense').style.display = "block";
-            document.getElementById('defense-result-box').style.display = "none";
-            switchStep('step-defense');
+            
+            switchStep('step-defense-1');
+            showTurnNotification("사용자님의 방어 차례입니다", "#F43F5E");
         }
 
         function showEndScreen(resultText, turns, isWin) {
+            document.getElementById('control-panel').style.backgroundColor = 'rgba(10, 14, 23, 0.95)';
             document.getElementById('end-result').innerText = resultText;
             document.getElementById('end-result').style.color = isWin ? '#10b981' : '#f43f5e';
             document.getElementById('end-turns').innerText = turns;
@@ -459,12 +549,28 @@
             try {
                 currentMode = document.querySelector('input[name="opt_mode"]:checked').value;
                 isAtkFirst = document.querySelector('input[name="opt_atk"]:checked').value === "ai";
-                var mySecret = document.getElementById('my_secret').value;
+                var mySecret = document.getElementById('my_secret').value.trim();
+                var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
                 localTurn = 1;
+
+                if (currentMode === "interactive") {
+                    if (mySecret.length > 0 && mySecret.length !== digits) {
+                        alert(`비밀키는 반드시 ${digits}자리로 입력해야 합니다.`);
+                        return;
+                    }
+                    if (!isAtkFirst && mySecret.length !== digits) {
+                        alert(`수비가 선공인 경우, 방어에 사용될 ${digits}자리의 비밀키를 반드시 입력해야 합니다.`);
+                        return;
+                    }
+                    if (mySecret.length > 0 && !/^\d+$/.test(mySecret)) {
+                        alert(`비밀키는 숫자만 입력 가능합니다.`);
+                        return;
+                    }
+                }
 
                 var payload = {
                     mode: currentMode,
-                    digits: parseInt(document.querySelector('input[name="opt_digits"]:checked').value),
+                    digits: digits,
                     use_lut: document.querySelector('input[name="opt_lut"]:checked').value === "true",
                     allow_dup: document.querySelector('input[name="opt_dup"]:checked').value === "true",
                     allow_zero: document.querySelector('input[name="opt_zero"]:checked').value === "true",
@@ -511,7 +617,7 @@
             var s = parseInt(document.querySelector('input[name="strike"]:checked').value);
             var b = parseInt(document.querySelector('input[name="ball"]:checked').value);
             var maxDigits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
-            if (s + b > maxDigits) { alert(`S와 B의 합이 자릿수(${maxDigits})를 초과할 수문을 초과할 수 없습니다.`); return; }
+            if (s + b > maxDigits) { alert(`S와 B의 합이 자릿수(${maxDigits})를 초과할 수 없습니다.`); return; }
             try {
                 var res = await fetch(`${window.API_BASE}/game/${currentSessionId}/attack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strike: s, ball: b }) });
                 var data = await res.json();
@@ -528,18 +634,25 @@
             } catch (err) { alert(`통신 실패: ${err.message}`); }
         }
 
+        // [D] 방어 페이즈 2: 수비 결과 (중복정보 배제)
         async function calculateDefense() {
             var guessStr = document.getElementById('opp_guess').value.trim();
             var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
+            
+            if (!guessStr) { alert(`상대방이 부른 숫자를 입력하세요.`); return; }
             if (guessStr.length !== digits) { alert(`정확히 ${digits}자리의 숫자를 입력하세요.`); return; }
+            if (!/^\d+$/.test(guessStr)) { alert(`숫자만 입력 가능합니다.`); return; }
+
             try {
                 var res = await fetch(`${window.API_BASE}/game/${currentSessionId}/defense`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ guess: guessStr }) });
                 var data = await res.json();
                 if (data.state === "defense_turn") {
+                    document.getElementById('defense-turn-2').innerText = localTurn;
                     document.getElementById('def-res-s').innerText = data.feedback.strike;
                     document.getElementById('def-res-b').innerText = data.feedback.ball;
-                    document.getElementById('btn-calc-defense').style.display = "none";
-                    document.getElementById('defense-result-box').style.display = "block";
+                    
+                    switchStep('step-defense-2');
+                    showTurnNotification("수비 결과", "#F43F5E");
                 }
             } catch(err) { alert(`계산 실패: ${err.message}`); }
         }
@@ -559,10 +672,10 @@
             document.getElementById('opp_guess').value = "";
             document.getElementById('secret-banner').style.display = "none"; 
             document.getElementById('auto-overlay').style.display = "none"; 
+            document.getElementById('control-panel').style.backgroundColor = 'rgba(10, 14, 23, 0.95)';
             switchStep('step-setup'); 
         }
 
-        // 초기화 실행
         renderFeedbackSockets(4);
         window.refreshLogList();
     </script>

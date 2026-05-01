@@ -59,7 +59,7 @@ window.refreshLogList = async function() {
 
 const safeJoin = (v) => Array.isArray(v) ? v.join("") : (v || "-");
 
-// [수정됨] Entropy와 Minimax 포맷 완벽 호환 파서
+// Entropy와 Minimax 포맷 완벽 호환 파서
 function parseSplit(arr) {
     if (!arr || !Array.isArray(arr) || arr.length === 0) return {type: 'unknown', s:'-', b:'-', c:'-'};
     
@@ -275,7 +275,7 @@ function renderDash2(history) {
     const lineLayer = svg.select(".line-layer");
     lineLayer.selectAll("*").remove();
     
-    // [핵심 수정] 턴 중복 제거: 동일한 턴에 processing과 win 로그가 겹칠 때 수직선이 그려지는 현상 방지
+    // 턴 중복 제거: 동일한 턴에 processing과 win 로그가 겹칠 때 수직선이 그려지는 현상 방지
     const chartData = Object.values(history.reduce((acc, curr) => {
         if(Number(curr.turn) >= 1) acc[curr.turn] = curr; // 나중에 들어온 최종 결과로 덮어씌움
         return acc;
@@ -351,7 +351,6 @@ function runMatrixEffect() {
     });
 }
 
-// [수정됨] Dash 4 렌더링 엔진 업데이트
 function renderDash4(data, status) {
     const container = document.getElementById("dash4"); 
     if (!container) return;
