@@ -83,15 +83,25 @@
         input[name^="opt_"]:checked + .chip-label, input[name="strike"]:checked + .chip-label, input[name="ball"]:checked + .chip-label { background: rgba(0, 240, 255, 0.15); color: #00f0ff; border-color: #00f0ff; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
         .btn-action { white-space: nowrap; background-color: transparent; color: #00f0ff; border: 1px solid #00f0ff; padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: 'Orbitron'; }
         .btn-action:hover { background-color: rgba(0, 240, 255, 0.1); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
-        .target-display { text-align: center; color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.5); padding: 20px; font-size: 32px; font-weight: bold; letter-spacing: 12px; font-family: 'Orbitron'; }
+        .target-display { 
+            text-align: center; color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.5); padding: 20px; 
+            font-family: 'Orbitron'; font-weight: bold;
+            font-size: clamp(18px, 6vw, 32px); /* 최소 18px ~ 최대 32px 사이에서 유동적 조절 */
+            letter-spacing: clamp(4px, 2vw, 12px); /* 화면이 좁아지면 자간도 좁아짐 */
+            white-space: nowrap; /* 절대 줄바꿈 하지 않음 */
+            overflow: hidden; 
+        }
         
         input[type="text"], input[type="number"] { background: rgba(0, 0, 0, 0.5); color: #00f0ff; border: 1px solid #1f2937; padding: 12px; font-family: 'Orbitron', sans-serif; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
         input[type="text"]:focus { border-color: #00f0ff; box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
         
         .responsive-input {
             width: 100%; box-sizing: border-box; text-align: center; 
-            font-size: clamp(16px, 4vw, 24px); letter-spacing: clamp(5px, 2vw, 12px); 
-            font-family: 'Orbitron', monospace; word-break: break-all; white-space: normal;
+            font-family: 'Orbitron', monospace; 
+            font-size: clamp(16px, 5vw, 24px); 
+            letter-spacing: clamp(4px, 2vw, 12px); 
+            white-space: nowrap; /* 기존의 word-break를 없애고 한 줄로 강제 */
+            overflow: hidden;
         }
 
         #secret-banner {
@@ -408,7 +418,7 @@
 
             var dash1Title = document.getElementById('dash1-title');
             if(dash1Title) {
-                dash1Title.innerText = `[Dash 1] 확률장 ${digits}-Chamber`;
+                dash1Title.innerText = `[Dash 1] 확률장`;
             }
 
             setPointerEvents('lbl_sol_ent', true);

@@ -1,0 +1,8 @@
+#!/bin/bash
+# 여기에 본인의 서버 경로를 입력하세요
+TARGET_PATH="/your/secret/path"
+
+rsync -avz ./interface/command_center.html $TARGET_PATH/index.html
+rsync -avz ./interface/tactical_visualizer.min.js $TARGET_PATH
+
+echo "✅ Mastermind (2 files) 배포 완료!"
