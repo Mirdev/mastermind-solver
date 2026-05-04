@@ -26,15 +26,27 @@
         /* =========================================
            상단 헤더 영역 정렬 (Flexbox) 및 버튼 스타일
         ========================================= */
+        .command-os-header {
+            display: flex;
+            flex-direction: row !important; /* 강제 가로 배치 */
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: nowrap !important; /* 절대 줄바꿈 금지 (아래로 떨어짐 방지) */
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(0, 240, 255, 0.3);
+            padding-bottom: 15px;
+        }
+
         .command-os-header h2 {
             margin: 0;
-            /* 모바일에서는 12px~14px 수준으로 줄어들고, 데스크탑에서는 최대 16px 유지 */
-            font-size: clamp(12px, 3.5vw, 16px); 
-            color: #00ffff;
-            font-family: monospace;
-            word-break: keep-all; /* 텍스트가 이상하게 쪼개지는 것 방지 */
+            font-size: clamp(16px, 4vw, 24px); /* 원래 타이틀 크기 복구 */
+            color: #00f0ff;
+            font-family: 'Orbitron', sans-serif; /* 오비트론 폰트 복구 */
+            letter-spacing: 4px; /* 원래 있던 자간 복구 */
+            white-space: nowrap; /* 타이틀 자체도 줄바꿈 방지 */
         }
-        
+
         .manual-open-btn {
             display: inline-block;
             padding: 4px 8px;
@@ -45,12 +57,11 @@
             font-size: 12px;
             font-weight: bold;
             transition: all 0.2s;
-            
-            /* ★ 모바일 붕괴 방지 핵심 코드 ★ */
             white-space: nowrap; /* 텍스트 절대 줄바꿈 금지 */
             flex-shrink: 0;      /* 공간이 좁아져도 버튼 크기 축소 금지 */
-            margin-left: 10px;   /* 타이틀과의 최소 간격 확보 */
+            margin-left: auto;   /* 우측 상단 꾸석탱이로 무조건 밀어내기 */
         }
+        
         .manual-open-btn:hover {
             background: rgba(0, 255, 255, 0.15);
             box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
