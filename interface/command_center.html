@@ -17,6 +17,197 @@
     </script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap');
+
+        /* 체크박스 숨기기 */
+        .hidden-checkbox {
+            display: none;
+        }
+        
+        /* =========================================
+           상단 헤더 영역 정렬 (Flexbox) 및 버튼 스타일
+        ========================================= */
+        .command-os-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(0, 240, 255, 0.3);
+            padding-bottom: 15px;
+        }
+
+        .manual-open-btn {
+            display: inline-block;
+            padding: 4px 10px;
+            color: #00ffff; /* 시안색 네온 */
+            border: 1px solid #00ffff;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .manual-open-btn:hover {
+            background: rgba(0, 255, 255, 0.15);
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+        }
+        
+        .manual-close-btn {
+            color: #ff4444; /* 경고 느낌의 레드 */
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .manual-close-btn:hover {
+            color: #ff8888;
+        }
+        
+        /* =========================================
+           슬라이드 박스 본체 및 애니메이션
+        ========================================= */
+        .manual-slide-box {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            
+            /* [핵심 교정 부분] 반응형 최적화 (하드코딩 방지) */
+            /* 모바일: 화면 전체 너비(100vw)에서 좌우 20px씩 여백을 뺌 */
+            width: calc(100vw - 40px); 
+            
+            /* 데스크탑: 화면이 아무리 넓어져도 박스 크기는 400px(사이드바 크기)에서 성장을 멈춤 */
+            max-width: 400px; 
+            
+            height: auto; 
+            max-height: calc(100vh - 40px); /* 상하 20px 여백 확보 */
+            
+            background-color: #050a14; 
+            border: 1px solid #004466; 
+            border-radius: 8px; 
+            box-shadow: -5px 0 25px rgba(0,0,0,0.8);
+            z-index: 1000; 
+            color: #c0d6e4; 
+            font-family: 'Malgun Gothic', sans-serif;
+            
+            /* 화면 밖으로 밀어내기 및 이펙트 설정 */
+            transform: translateX(calc(100% + 50px));
+            transition: transform 0.3s ease-out; 
+            
+            /* 내부 여백 및 스크롤 설정 */
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .manual-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #004466;
+        }
+        
+        .manual-header h2 {
+            margin: 0;
+            font-size: 16px;
+            color: #00ffff;
+            font-family: monospace;
+        }
+        
+        .manual-content {
+            padding: 20px;
+            overflow-y: auto; /* 내용이 길면 스크롤 생성 */
+        }
+        
+        .manual-content h3 {
+            font-size: 14px;
+            color: #00aaaa;
+            margin-top: 0px;
+            margin-bottom: 10px;
+        }
+        
+        .manual-content p, .manual-content ul {
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .manual-content ul {
+            padding-left: 20px;
+        }
+        
+        .manual-content li {
+            margin-bottom: 8px;
+        }
+        
+        .blog-link {
+            display: block;
+            margin-top: 30px;
+            padding: 12px;
+            background: rgba(0, 255, 255, 0.05);
+            border: 1px dashed #00ffff;
+            color: #00ffff;
+            text-decoration: none;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .blog-link:hover {
+            background: rgba(0, 255, 255, 0.2);
+        }
+
+        /* 매뉴얼 내부 번호 목록 스타일링 */
+        .manual-numbered-list {
+            font-size: 13px;
+            line-height: 1.6;
+            padding-left: 20px; /* 좌측 들여쓰기 */
+            margin-top: 10px;
+            color: #c0d6e4;
+        }
+        
+        .manual-numbered-list > li {
+            margin-bottom: 12px; /* 각 숫자 항목 사이의 간격 */
+        }
+        
+        /* 숫자 목록 내부의 점(Bullet) 목록 간격 조정 */
+        .manual-numbered-list ul {
+            margin-top: 6px;
+            margin-bottom: 6px;
+            padding-left: 18px;
+        }
+        
+        .manual-numbered-list ul li {
+            margin-bottom: 4px;
+            color: #8ab4f8; /* 하위 설명은 약간 다른 색상으로 구분 (선택 사항) */
+        }
+        
+        /* =========================================
+           클릭 시 작동 로직 (동작 핵심)
+        ========================================= */
+        
+        /* 1. 박스 밀려오기 */
+        #manual-toggle:checked ~ .manual-slide-box {
+            transform: translateX(0);
+        }
+        
+        /* 2. 바깥 배경 (Backdrop) 나타나기 */
+        .manual-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 999; /* 슬라이드 박스보다 1 낮게 */
+            
+            /* 기본적으로 숨김, 클릭 불가능 상태 */
+            opacity: 0;
+            pointer-events: none; 
+            transition: opacity 0.3s;
+        }
+        
+        #manual-toggle:checked ~ .manual-backdrop {
+            /* 메뉴 열리면 나타나고 클릭 가능해짐 */
+            opacity: 1;
+            pointer-events: auto; 
+        }
         
         body { margin: 0; padding: 0; background-color: #050914; color: #8ab4f8; font-family: 'Share Tech Mono', monospace; display: flex; height: 100dvh; overflow: hidden; box-sizing: border-box; }
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #050914; } ::-webkit-scrollbar-thumb { background: #1e3a8a; border-radius: 3px; }
@@ -84,7 +275,10 @@
         @keyframes pulseVS { 0% { transform: scale(1); text-shadow: none; } 50% { transform: scale(1.2); text-shadow: 0 0 10px #F43F5E; color: #F43F5E; } 100% { transform: scale(1); text-shadow: none; } }
 
         #control-panel { flex: 1.1; padding: 20px 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); height: 100dvh; transition: background-color 0.5s ease; }
-        h2.panel-title { color: #00f0ff; text-transform: uppercase; letter-spacing: 4px; text-align: center; margin-top: 0; padding-bottom: 15px; font-family: 'Orbitron', sans-serif; border-bottom: 2px solid rgba(0, 240, 255, 0.3); }
+        
+        /* 타이틀 스타일 수정 (Flex 레이아웃에 맞게 교정) */
+        h2.panel-title { color: #00f0ff; text-transform: uppercase; letter-spacing: 4px; margin: 0; padding: 0; font-family: 'Orbitron', sans-serif; border: none; }
+        
         .step-container { display: none; flex-direction: column; gap: 20px; } .step-container.active { display: flex; animation: fadeIn 0.5s forwards; }
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         .label-title { color: #60a5fa; font-weight: bold; margin-bottom: 8px; font-size: 12px; }
@@ -206,6 +400,58 @@
     <script src="tactical_visualizer.min.js"></script>
 
     <div id="control-panel">
+        
+        <!-- 1. 상태를 저장할 숨겨진 체크박스 (부모 직계로 배치) -->
+        <input type="checkbox" id="manual-toggle" class="hidden-checkbox">
+        
+        <!-- 2. 바깥 영역 클릭 시 닫히게 만드는 투명 배경 -->
+        <label for="manual-toggle" class="manual-backdrop"></label>
+
+        <!-- 3. 슬라이드될 설명서 박스 본체 -->
+        <div class="manual-slide-box">
+            <div class="manual-header">
+                <h2>숫자야구 계산기(COMMAND OS) MANUAL</h2>
+                <!-- ★ 박스 안쪽에 배치된 [닫기] 버튼 -->
+                <label for="manual-toggle" class="manual-close-btn">[ X ]</label>
+            </div>
+    
+            <div class="manual-content">
+                <h3>> OPERATION GUIDE</h3>
+                <ol class="manual-numbered-list">
+                    <li>Operation_mode를 선택합니다.
+                        <ul>
+                            <li>실전대결: 상대방과 실제 게임 시에 사용하는 계산기(어시스터)입니다.</li>
+                            <li>자가대결: 각 솔버가 어떤 식으로 해를 찾아가는지 알아서 최적해까지 계산하는 과정을 보여줍니다.</li>
+                        </ul>
+                    </li>
+                    <li>SOLVER_CORE를 선택하여 연산 방식을 결정합니다.</li>
+                    <li>자릿수(Digits)와 LUT 가속, 중복(Duplicate)과 리딩제로(Zero-start)를 선택합니다.
+                        <ul>
+                            <li>LUT(Look Up Table) 가속은 4자리 계산에만 적용됩니다.</li>
+                        </ul>
+                    </li>
+                    <li>선공, 후공을 결정합니다.</li>
+                    <li>[INITIALIZE SEQUENCE]를 눌러 교전을 시작합니다.</li>
+                </ol>
+            <br>
+
+                <h3>> SOLVER CORES</h3>
+                <ul>
+                    <li><strong>ENTROPY:</strong> 섀넌의 정보 엔트로피 이론을 기반으로, 후보군을 가장 균일하게 쪼개는 확률론적 최적수 탐색.</li>
+                    <li><strong>HEURISTIC:</strong> 나이브 베이즈 기반 초고속 근사치 엔진.</li>
+                    <li><strong>MINIMAX:</strong> 도널드 크누스 알고리즘. 최악의 경우(Worst-case)를 상정하여 남은 후보군의 최대값을 최소화하는 방어적 탐색.</li>
+                </ul>
+
+                <div class="manual-footer">
+            <br><br>
+                    <h3><center>각 코어의 수학적 엄밀한 증명과 구현 코드는<br>블로그에서 확인하시기 바랍니다.</center></h3>
+                    <a href="https://ellslab.com/blog/docs/algorithm/mastermind/" target="_blank" class="blog-link">
+                        숫자야구계산기(마스터마인드 솔버)<br>알고리즘 전체 이론 보기
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <div id="turn-notification">
             <div class="turn-text" id="turn-notification-text"></div>
         </div>
@@ -217,7 +463,11 @@
             <div style="color: #94A3B8; font-size: 12px; margin-top: 15px;">자가 대결 연산 중입니다. 좌측 패널을 확인하세요.</div>
         </div>
 
-        <h2 class="panel-title">COMMAND OS</h2>
+        <!-- 새롭게 변경된 헤더 영역 (타이틀 + 매뉴얼 버튼) -->
+        <div class="command-os-header">
+            <h2 class="panel-title">COMMAND OS</h2>
+            <label for="manual-toggle" class="manual-open-btn">[ MANUAL ]</label>
+        </div>
         
         <div id="secret-banner">
             <span class="secret-label">> MY SECRET : </span>
