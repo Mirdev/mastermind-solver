@@ -183,7 +183,7 @@ class FastEntropySolver:
         # 2. 전수조사 연산 (리던던시가 완벽히 소거된 클린 코드)
         if best_guess is None:
             S_list = self.candidates 
-            full_guesses = getattr(self.engine, 'all_candidates', self.candidates)
+            full_guesses = self._generate_all_candidates()
 
             # [핵심] 2턴일 경우 템플릿을 추출하여 탐색 공간(G)을 극단적으로 압축
             if turn == 2:
