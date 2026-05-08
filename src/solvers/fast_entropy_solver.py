@@ -139,70 +139,77 @@ class FastEntropySolver:
 
     def log_state_after_feedback(self, turn, guess):
         print(f"\n[AI Thinking] 다음 공격(Turn {turn+1})을 위한 최적 경로 분석 중...")
-        return self.get_best_guess(turn + 1) 
+        return self.get_best_guess(turn + 1)
+
+    def _get_turn2_templates(self, first_guess, all_possible_guesses):
+        """1턴 추측을 기준으로 2턴의 대칭성 파괴 대표 템플릿 추출 (간결화 짓수)"""
+        used = set(first_guess)
+        # 미사용 숫자의 기준점을 잡습니다.
+        std_unused = [d for d in range(10) if d not in used][:len(first_guess)]
+        
+        # 리스트 컴프리헨션으로 파이써닉하게 압축
+        return [
+            guess for guess in all_possible_guesses
+            if [d for d in guess if d not in used] == std_unused[:len([d for d in guess if d not in used])]
+        ]
     
     def get_best_guess(self, turn):
-        eval_list = []
         best_guess = None
 
-        is_lut = self.engine.__class__.__name__ == "MastermindLUTEngine"
-
-        # 1. 2턴 하드코딩 (수학적 상수 반환)
+        # 1. 1턴 하드코딩 (수학적 상수 반환)
         if turn == 1:
-            # 중복 허용 시 0011 패턴이 엔트로피 효율이 높고, 중복 불가 시 0123 패턴이 높습니다.
             if self.engine.allow_duplicates:
-                # 3자리(001), 4자리(0011), 5자리(00112) 등 자릿수에 맞춰 동적 생성
                 pattern = [self.start_digits[i // 2] for i in range(self.digits)]
                 best_guess = tuple(int(d) for d in pattern)
             else:
                 best_guess = tuple(int(d) for d in self.start_digits[:self.digits])
-        elif turn == 2:
-            next_digits = (self.start_digits[self.digits:] + self.start_digits)[:self.digits]
-            best_guess = tuple(int(d) for d in next_digits)
 
-        # 2. 전수조사 연산 (분기문 없는 깔끔한 로직)
+        # 2. 전수조사 연산 (리던던시가 완벽히 소거된 클린 코드)
         if best_guess is None:
-            if is_lut:
-                # LUT 전용 슬라이싱 연산
-                cand_idx = np.array([c[0]*1000 + c[1]*100 + c[2]*10 + c[3] for c in self.candidates], dtype=np.int32)
-                N = len(cand_idx)
-                grid = self.engine.lut_matrix[np.ix_(cand_idx, cand_idx)]
-                
-                for j in range(N):
-                    _, counts = np.unique(grid[:, j], return_counts=True)
-                    p = counts / N
-                    entropy = -np.sum(p * np.log2(p))
+            S_list = self.candidates 
+            full_guesses = getattr(self.engine, 'all_candidates', self.candidates)
 
-                    # [추가] NumPy를 활용하여 최악의 경우(가장 큰 덩어리) 도출
-                    worst_case = int(np.max(counts))
-                    eval_list.append((self.candidates[j], float(entropy), worst_case))
-                    
+            # 탐색 공간(G) 압축
+            if turn == 2:
+                first_guess = self.engine.history[0][0] if hasattr(self.engine, 'history') and self.engine.history else self.start_digits[:self.digits]
+                G_list = self._get_turn2_templates(first_guess, full_guesses)
             else:
-                # N자리 범용 브로드캐스팅 연산
-                C = np.array(self.candidates, dtype=np.int8)
-                N = len(C)
-                
-                strikes = (C[:, None, :] == C[None, :, :]).sum(axis=2)
-                H = (C[..., None] == np.arange(10)).sum(axis=1)
-                matches = np.minimum(H[:, None, :], H[None, :, :]).sum(axis=2)
-                balls = matches - strikes
-                
-                grid = (strikes << 4) | balls
-                
-                for j in range(N):
-                    _, counts = np.unique(grid[:, j], return_counts=True)
-                    p = counts / N
-                    entropy = -np.sum(p * np.log2(p))
-                    
-                    # [추가] NumPy를 활용하여 최악의 경우(가장 큰 덩어리) 도출
-                    worst_case = int(np.max(counts))
-                    eval_list.append((self.candidates[j], float(entropy), worst_case))
+                G_list = full_guesses
 
+            N, M = len(S_list), len(G_list)
+
+            # --- [Grid 생성 분기] ---
+            if self.engine.__class__.__name__ == "MastermindLUTEngine":
+                G_idx = np.array([c[0]*1000 + c[1]*100 + c[2]*10 + c[3] for c in G_list], dtype=np.int32)
+                S_idx = np.array([c[0]*1000 + c[1]*100 + c[2]*10 + c[3] for c in S_list], dtype=np.int32)
+                grid = self.engine.lut_matrix[np.ix_(S_idx, G_idx)]
+            else:
+                G = np.array(G_list, dtype=np.int8)
+                S = np.array(S_list, dtype=np.int8)
+                
+                strikes = (S[:, None, :] == G[None, :, :]).sum(axis=2)
+                H_S = (S[..., None] == np.arange(10)).sum(axis=1)
+                H_G = (G[..., None] == np.arange(10)).sum(axis=1)
+                balls = np.minimum(H_S[:, None, :], H_G[None, :, :]).sum(axis=2) - strikes
+                grid = (strikes << 4) | balls
+
+            # --- [단일화된 평가 루프] 튜플 구조: (guess, entropy, worst_case) ---
+            eval_list = []
+            for j in range(M):
+                _, counts = np.unique(grid[:, j], return_counts=True)
+                p = counts / N
+                entropy = -np.sum(p * np.log2(p))
+                worst_case = int(np.max(counts))
+                eval_list.append((G_list[j], float(entropy), worst_case))
+
+            # --- [FastEntropy 정렬 전략] ---
+            # 1순위: 엔트로피 최대화 (내림차순, reverse=True)
+            # 2순위: 최악의 경우 최소화 (-x[2]를 통해 오름차순 효과)
             eval_list.sort(key=lambda x: (round(x[1], 6), -x[2]), reverse=True)
             best_guess = eval_list[0][0]
 
+        # 대시보드 페이로드 전송
         payload = self._extract_dashboard_data(turn, best_guess, eval_list, "processing")
-        
         if self.observer_callback:
             self.observer_callback(payload)
             
