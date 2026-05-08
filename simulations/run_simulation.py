@@ -20,6 +20,7 @@ except ImportError:
 
 def benchmark(solver_class, engine, iterations=1000):
     total_turns = 0
+    max_turns = 0  # 최악의 턴 수를 기록할 변수
     start_time = time.time()
     
     for _ in range(iterations):
@@ -27,12 +28,16 @@ def benchmark(solver_class, engine, iterations=1000):
         solver = solver_class(engine)
         turns = solver.solve(secret)
         total_turns += turns
+        
+        # 현재 턴 수가 기존 최악의 턴 수보다 크면 갱신
+        if turns > max_turns:
+            max_turns = turns
 
     end_time = time.time()
     avg_turns = total_turns / iterations
     duration = end_time - start_time
     
-    return avg_turns, duration
+    return avg_turns, duration, max_turns
 
 def run_all_benchmarks():
     # 1. 테스트하고 싶은 다양한 게임 규칙 설정
@@ -84,8 +89,8 @@ def run_all_benchmarks():
 
         for name, solver_ptr in solvers:
             print(f"[*] {name} 테스트 시작 ({scenario['iters']}회)...")
-            avg, dt = benchmark(solver_ptr, engine, scenario['iters'])
-            print(f"[-] 결과: 평균 {avg:.2f}회 | 총 소요시간: {dt:.2f}초")
+            avg, dt, max_turns = benchmark(solver_ptr, engine, scenario['iters'])
+            print(f"[-] 결과: 평균 {avg:.2f}회 | 최악 {max_turns}회 | 총 소요시간: {dt:.2f}초")
 
 if __name__ == "__main__":
     # 모든 경우의 수를 전부 탐색하므로 100번만 수행

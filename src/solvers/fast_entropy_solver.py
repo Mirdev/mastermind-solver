@@ -142,16 +142,31 @@ class FastEntropySolver:
         return self.get_best_guess(turn + 1)
 
     def _get_turn2_templates(self, first_guess, all_possible_guesses):
-        """1턴 추측을 기준으로 2턴의 대칭성 파괴 대표 템플릿 추출 (간결화 짓수)"""
-        used = set(first_guess)
-        # 미사용 숫자의 기준점을 잡습니다.
-        std_unused = [d for d in range(10) if d not in used][:len(first_guess)]
+        """1턴 추측을 기준으로 2턴의 대칭성 파괴 대표 템플릿 추출 (타입 안정성 및 중복 처리 강화)"""
+        # [수정] 들어온 값이 문자열이든 튜플이든 무조건 정수형(int) 집합으로 강제 변환
+        used = set(int(d) for d in first_guess) 
+        std_unused = [d for d in range(10) if d not in used]
         
-        # 리스트 컴프리헨션으로 파이써닉하게 압축
-        return [
-            guess for guess in all_possible_guesses
-            if [d for d in guess if d not in used] == std_unused[:len([d for d in guess if d not in used])]
-        ]
+        templates = []
+        for guess in all_possible_guesses:
+            mapping = {}
+            next_idx = 0
+            is_canonical = True
+            
+            for d in guess:
+                if d not in used:
+                    if d not in mapping:
+                        # 미사용 숫자가 처음 등장할 때, 지정된 순서(std_unused)대로 등장하는지 검증
+                        if d != std_unused[next_idx]:
+                            is_canonical = False
+                            break
+                        mapping[d] = std_unused[next_idx]
+                        next_idx += 1
+                        
+            if is_canonical:
+                templates.append(guess)
+                
+        return templates
     
     def get_best_guess(self, turn):
         best_guess = None
@@ -169,9 +184,18 @@ class FastEntropySolver:
             S_list = self.candidates 
             full_guesses = getattr(self.engine, 'all_candidates', self.candidates)
 
-            # 탐색 공간(G) 압축
+            # [핵심] 2턴일 경우 템플릿을 추출하여 탐색 공간(G)을 극단적으로 압축
             if turn == 2:
-                first_guess = self.engine.history[0][0] if hasattr(self.engine, 'history') and self.engine.history else self.start_digits[:self.digits]
+                if hasattr(self.engine, 'history') and self.engine.history:
+                    first_guess = self.engine.history[0][0]
+                else:
+                    # [수정] 문자열이 아닌 명확한 정수형 튜플로 first_guess 생성
+                    if self.engine.allow_duplicates:
+                        pattern = [self.start_digits[i // 2] for i in range(self.digits)]
+                        first_guess = tuple(int(d) for d in pattern)
+                    else:
+                        first_guess = tuple(int(d) for d in self.start_digits[:self.digits])
+                        
                 G_list = self._get_turn2_templates(first_guess, full_guesses)
             else:
                 G_list = full_guesses
