@@ -165,6 +165,7 @@ class MinimaxSolver:
     
     def get_best_guess(self, turn):
         best_guess = None
+        eval_list = []
 
         # 1. 1턴 하드코딩 (수학적 상수 반환)
         if turn == 1:
@@ -213,7 +214,6 @@ class MinimaxSolver:
                 grid = (strikes << 4) | balls
 
             # --- [단일화된 평가 루프] 튜플 구조: (guess, entropy, worst_case) ---
-            eval_list = []
             for j in range(M):
                 _, counts = np.unique(grid[:, j], return_counts=True)
                 p = counts / N
