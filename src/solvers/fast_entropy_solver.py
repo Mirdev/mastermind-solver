@@ -12,6 +12,7 @@ class FastEntropySolver(BaseMastermindSolver):
         if len(self.candidates) == 1:
             best_guess = self.candidates[0]
 
+        # 1턴 하드코딩
         if turn == 1:
             if self.engine.allow_duplicates:
                 pattern = [self.start_digits[i // 2] for i in range(self.digits)]
@@ -19,6 +20,7 @@ class FastEntropySolver(BaseMastermindSolver):
             else:
                 best_guess = tuple(int(d) for d in self.start_digits[:self.digits])
 
+        # 2턴 이후 연산
         if best_guess is None:
             S_list = self.candidates 
             full_guesses = getattr(self.engine, 'all_candidates', self.all_guesses)
@@ -38,6 +40,7 @@ class FastEntropySolver(BaseMastermindSolver):
 
             N, M = len(S_list), len(G_list)
 
+            # 그리드 생성 (LUT 또는 동적 연산)
             if self.engine.__class__.__name__ == "MastermindLUTEngine":
                 G_idx = np.array([c[0]*1000 + c[1]*100 + c[2]*10 + c[3] for c in G_list], dtype=np.int32)
                 S_idx = np.array([c[0]*1000 + c[1]*100 + c[2]*10 + c[3] for c in S_list], dtype=np.int32)
@@ -51,6 +54,7 @@ class FastEntropySolver(BaseMastermindSolver):
                 balls = np.minimum(H_S[:, None, :], H_G[None, :, :]).sum(axis=2) - strikes
                 grid = (strikes << 4) | balls
 
+            # 엔트로피 평가 루프
             for j in range(M):
                 _, counts = np.unique(grid[:, j], return_counts=True)
                 p = counts / N
@@ -61,28 +65,23 @@ class FastEntropySolver(BaseMastermindSolver):
             eval_list.sort(key=lambda x: (round(x[1], 6), -x[2]), reverse=True)
             best_guess = eval_list[0][0]
 
-        # 대시보드용 데이터 정제
-        expected_splits = {}
-        if best_guess:
+        # --- [Dashboard Data 정제] ---
+        def get_detailed_splits(guess):
+            if not guess: return []
+            counts = {}
             for cand in self.candidates:
-                fb = self.engine.get_feedback(cand, best_guess)
-                expected_splits[fb] = expected_splits.get(fb, 0) + 1
-        sorted_splits = sorted(expected_splits.items(), key=lambda x: x[1], reverse=True)
-        
-        worst_splits = []
-        worst_guess = None
-        if eval_list and len(eval_list) > 1:
-            worst_guess = eval_list[-1][0] 
-            w_splits_dict = {}
-            for cand in self.candidates:
-                fb = self.engine.get_feedback(cand, worst_guess)
-                w_splits_dict[fb] = w_splits_dict.get(fb, 0) + 1
-            worst_splits = sorted(w_splits_dict.items(), key=lambda x: x[1], reverse=True)
+                fb = self.engine.get_feedback(cand, guess)
+                counts[fb] = counts.get(fb, 0) + 1
+            return sorted(counts.items(), key=lambda x: x[1], reverse=True)
+
+        expected_splits = get_detailed_splits(best_guess)
+        worst_guess = eval_list[-1][0] if eval_list and len(eval_list) > 1 else None
+        worst_splits = get_detailed_splits(worst_guess)
             
         evaluation_payload = {
             "metric_name": "Shannon Entropy (bits)",
-            "top_guesses": [{"guess": list(g), "score": s} for g, s, _ in eval_list],
-            "expected_splits": sorted_splits,
+            "top_guesses": [{"guess": list(g), "score": s} for g, s, _ in eval_list[:10]],
+            "expected_splits": expected_splits,
             "worst_split_comparison": { 
                 "guess": list(worst_guess) if worst_guess else [],
                 "splits": worst_splits
