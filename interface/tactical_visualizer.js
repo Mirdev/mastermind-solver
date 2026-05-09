@@ -4,6 +4,8 @@ if (typeof API_BASE === 'undefined') {
     window.API_BASE = isLocal ? "http://127.0.0.1:8000" : "";
 }
 
+console.log("LOG_VER_CHECK_0509_01");
+
 window.renderTacticalDisplay = async function(fileName) {
     try {
         const response = await fetch(`${window.API_BASE}/logs/${fileName}`);
