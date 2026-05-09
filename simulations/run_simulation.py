@@ -60,13 +60,24 @@ def benchmark(solver_class, engine_class, config, iterations):
     return avg_turns, max_turns, time_per_iter, total_duration
 
 def run_grid_search():
-    # 축 1: 5가지 게임 엔진 환경 설정 (5자리 및 LUT 미적용은 OOM/지연 방지를 위해 iters 하향 조정)
+    # 축 1: 16가지 게임 엔진 환경 설정
     grid_environments = [
         {"desc": "3자리 표준 (LUT 미적용)", "digits": 3, "use_lut": False, "dup": False, "zero": False, "iters": 1000},
-        {"desc": "4자리 표준 (LUT 미적용)", "digits": 4, "use_lut": False, "dup": False, "zero": False, "iters": 500},
+        {"desc": "3자리 리딩제로 (LUT 미적용)", "digits": 3, "use_lut": False, "dup": False, "zero": True, "iters": 1000},
+        {"desc": "3자리 중복 (LUT 미적용)", "digits": 3, "use_lut": False, "dup": True, "zero": False, "iters": 1000},
+        {"desc": "3자리 하드코어 (LUT 미적용)", "digits": 3, "use_lut": False, "dup": True, "zero": True, "iters": 1000},
+        {"desc": "4자리 표준 (LUT 미적용)", "digits": 4, "use_lut": False, "dup": False, "zero": False, "iters": 1000},
         {"desc": "4자리 표준 (LUT 적용)",   "digits": 4, "use_lut": True,  "dup": False, "zero": False, "iters": 1000},
+        {"desc": "4자리 리딩제로 (LUT 미적용)", "digits": 4, "use_lut": False, "dup": False, "zero": True, "iters": 1000},
+        {"desc": "4자리 리딩제로 (LUT 적용)",   "digits": 4, "use_lut": True,  "dup": False, "zero": True, "iters": 1000},
+        {"desc": "4자리 중복 (LUT 미적용)", "digits": 4, "use_lut": False, "dup": True, "zero": False, "iters": 1000},
+        {"desc": "4자리 중복 (LUT 적용)",   "digits": 4, "use_lut": True,  "dup": True, "zero": False, "iters": 1000},
+        {"desc": "4자리 하드코어 (LUT 미적용)","digits": 4, "use_lut": False,  "dup": True,  "zero": True,  "iters": 1000},
         {"desc": "4자리 하드코어 (LUT 적용)","digits": 4, "use_lut": True,  "dup": True,  "zero": True,  "iters": 1000},
-        {"desc": "5자리 표준 (LUT 미적용)", "digits": 5, "use_lut": False, "dup": False, "zero": False, "iters": 1000}
+        {"desc": "5자리 표준 (LUT 미적용)", "digits": 5, "use_lut": False, "dup": False, "zero": False, "iters": 1000},
+        {"desc": "5자리 리딩제로 (LUT 미적용)", "digits": 5, "use_lut": False, "dup": False, "zero": True, "iters": 1000},
+        {"desc": "5자리 중복 (LUT 미적용)", "digits": 5, "use_lut": False, "dup": True, "zero": False, "iters": 1000},
+        {"desc": "5자리 하드코어 (LUT 미적용)","digits": 5, "use_lut": False,  "dup": True,  "zero": True,  "iters": 1000},
     ]
 
     # 축 2: 3가지 솔버 (오리지널 섀넌 엔트로피 배제)
@@ -77,7 +88,7 @@ def run_grid_search():
     ]
 
     print("=" * 70)
-    print("▶ 5x3 마스터마인드 벤치마크 그리드 서치 시작")
+    print("▶ 4x4x3 마스터마인드 벤치마크 그리드 서치 시작")
     print("=" * 70)
 
     for env in grid_environments:
