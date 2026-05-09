@@ -22,23 +22,30 @@ class MastermindEngine:
             return secret
 
     def get_feedback(self, secret, guess):
-        """S/B 판정 로직 (중복 허용 시에도 작동하도록 설계)"""
-        strikes = sum(1 for s, g in zip(secret, guess) if s == g)
+        """
+        [고속 최적화 버전]
+        동적 메모리 할당(list, pop, remove)과 내장 함수 호출을 배제하여 
+        LUT가 없는 3자리, 5자리 환경에서의 연산 속도를 극대화한 로직
+        """
+        strikes = 0
+        s_counts = [0] * 10
+        g_counts = [0] * 10
         
-        # 중복 허용 시 볼 판정은 조금 더 복잡함
-        s_list = list(secret)
-        g_list = list(guess)
-        
-        # 스트라이크 제거 후 남은 숫자들로 볼 계산
-        for i in range(len(g_list)-1, -1, -1):
-            if g_list[i] == s_list[i]:
-                s_list.pop(i)
-                g_list.pop(i)
-        
+        # 1. 단일 루프로 스트라이크 판정 및 볼(Ball) 판정을 위한 숫자 빈도 수집
+        for s, g in zip(secret, guess):
+            if s == g:
+                strikes += 1
+            else:
+                # 스트라이크가 아닌 숫자들만 카운팅
+                s_counts[s] += 1
+                g_counts[g] += 1
+                
+        # 2. 내장 함수를 배제하고 순수 조건문으로 볼(Ball) 개수 합산
         balls = 0
-        for g in g_list:
-            if g in s_list:
-                balls += 1
-                s_list.remove(g)
+        for i in range(10):
+            # 양쪽 모두에 존재하는 숫자(볼 조건 충족)인 경우
+            if g_counts[i] > 0 and s_counts[i] > 0:
+                # min() 함수 호출 대신 삼항 연산자(조건문) 활용하여 최솟값 가산
+                balls += s_counts[i] if s_counts[i] < g_counts[i] else g_counts[i]
                 
         return strikes, balls

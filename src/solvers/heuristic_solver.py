@@ -13,22 +13,27 @@ class HeuristicSolver:
     # [핵심] 모든 인스턴스가 공유하는 클래스 레벨 캐시
     _candidates_cache = {}
     
-    def __init__(self, engine, observer_callback=None):
+    def __init__(self, engine, observer_callback=None, is_benchmark=False):
         self.engine = engine
         self.observer_callback = observer_callback
+        self.is_benchmark = is_benchmark
         self.digits = engine.digits
+
+        self.log_file = None
+        
         # 생성 시점에 캐시를 확인하여 후보군 할당
         self.candidates = self._generate_all_candidates()
 
-        # 솔버가 생성될 때 딱 한 번 로그 파일을 준비합니다.
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(current_dir))
-        self.log_dir = os.path.join(project_root, "logs")
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.log_file = os.path.join(self.log_dir, f"sim_log_{timestamp}.jsonl")
-        self._log_initial_state()
+        if not self.is_benchmark:
+            # 솔버가 생성될 때 딱 한 번 로그 파일을 준비합니다.
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(os.path.dirname(current_dir))
+            self.log_dir = os.path.join(project_root, "logs")
+            if not os.path.exists(self.log_dir):
+                os.makedirs(self.log_dir)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.log_file = os.path.join(self.log_dir, f"sim_log_{timestamp}.jsonl")
+            self._log_initial_state()
 
     def _log_initial_state(self):
         """프로그램 시작 직후 관제 센터를 활성화하기 위한 0턴(초기) 상태를 기록합니다."""
@@ -92,6 +97,8 @@ class HeuristicSolver:
         ]
 
     def _extract_dashboard_data(self, turn, best_guess, evaluation_list, status):
+        if self.is_benchmark or not self.log_file:
+            return {}
         """대시보드용 공용 데이터 구조 생성"""
         # 1번 대시보드용 확률 행렬 계산
         total = len(self.candidates)
