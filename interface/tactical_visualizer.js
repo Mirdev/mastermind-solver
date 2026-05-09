@@ -60,19 +60,24 @@ window.refreshLogList = async function() {
 const safeJoin = (v) => Array.isArray(v) ? v.join("") : (v || "-");
 
 // Entropy와 Minimax 포맷 완벽 호환 파서 (평탄화 로직 제거 버전)
-function parseSplit(arr) {
-    if (!arr || !Array.isArray(arr) || arr.length === 0) return {type: 'unknown', s:'-', b:'-', c:'-'};
+function parseSplit(item) {
+    // 항목이 없거나 배열이 아니면 즉시 unknown 반환
+    if (!item || !Array.isArray(item)) return {type: 'unknown', s:'-', b:'-', c:'-'};
     
-    let target = arr;
-
-    // 1. Minimax 포맷: e.g. ["Worst-case", 15]
-    if (typeof target[0] === 'string') {
-        return { type: 'minimax', label: target[0], c: target[1] };
+    // 1. 피드백 기반 포맷: [[S, B], count] -> Python의 counts.items() 결과
+    // 예: [[1, 1], 25]
+    if (Array.isArray(item[0]) && item.length >= 2) {
+        return { 
+            type: 'feedback', 
+            s: item[0][0], 
+            b: item[0][1], 
+            c: item[1] 
+        };
     }
 
-    // 2. Entropy / FastEntropy 포맷: e.g. [[S, B], count] -> [[1, 1], 25]
-    if (Array.isArray(target[0]) && target.length >= 2) {
-        return { type: 'entropy', s: target[0][0], b: target[0][1], c: target[1] };
+    // 2. 레이블 기반 포맷 (기존 Minimax 호환용)
+    if (typeof item[0] === 'string') {
+        return { type: 'label', label: item[0], c: item[1] };
     }
     
     return { type: 'unknown', s:'-', b:'-', c:'-'};
@@ -354,25 +359,38 @@ function renderDash4(data, status) {
     const isEnded = (status === 'win' || status === 'lose');
     const vsHTML = `<div class="vs-text ${isEnded ? 'static-vs' : 'pulse-vs'}">VS</div>`;
     
+    // 현재 사용 중인 메트릭 확인 (Entropy vs Minimax 구분용)
+    const metricName = evalData.metric_name || "";
+    const isMinimax = metricName.toLowerCase().includes("minimax");
+
     if(evalData.expected_splits && evalData.expected_splits.length > 0) {
+        // [핵심] 첫 번째 요소를 명시적으로 전달
         const sp = parseSplit(evalData.expected_splits[0]);
         const wcInfo = evalData.worst_split_comparison || {};
         const wcGuess = wcInfo.guess || ['-','-','-','-'];
-        const wc = parseSplit(wcInfo.splits);
         
-        let bestDesc = sp.type === 'minimax' 
-            ? `<div>판정: ${sp.label}</div><div>➔ 최대 잔여 노드: <span class="highlight">${sp.c}</span></div>`
-            : `<div>최악 피드백: ${sp.s}S ${sp.b}B</div><div>➔ 생존 노드: <span class="highlight">${sp.c}</span></div>`;
+        // [핵심] wcInfo.splits 배열의 첫 번째 요소를 전달하도록 수정
+        const wc = parseSplit(wcInfo.splits ? wcInfo.splits[0] : null);
+        
+        // 솔버 유형에 따른 동적 레이블 설정
+        const labelBest = isMinimax ? "최악 피드백시" : "최악 피드백시"; // 엔트로피/미니맥스 둘 다 '최악' 기준은 동일함
+        const labelNode = isMinimax ? "최대 잔여 노드" : "생존 노드";
 
-        let worstDesc = wc.type === 'minimax' 
-            ? `<div>동일 판정: ${wc.label}</div><div>➔ 최대 잔여 노드: <span class="highlight">${wc.c}</span></div>`
-            : `<div>동일 피드백: ${wc.s}S ${wc.b}B</div><div>➔ 생존 노드: <span class="highlight">${wc.c}</span></div>`;
+        let bestDesc = `<div>${labelBest}: ${sp.s}S ${sp.b}B</div><div>➔ ${labelNode}: <span class="highlight">${sp.c}</span></div>`;
+        let worstDesc = `<div>동일 피드백: ${wc.s}S ${wc.b}B</div><div>➔ ${labelNode}: <span class="highlight">${wc.c}</span></div>`;
 
-        container.innerHTML = `<div class="split-box best-box slide-in-left"><span style="color:#10B981">TARGET ADOPTED</span><div class="highlight">[${safeJoin(data.best_guess)}]</div>
-            ${bestDesc}</div>
+        container.innerHTML = `
+            <div class="split-box best-box slide-in-left">
+                <span style="color:#10B981">TARGET ADOPTED</span>
+                <div class="highlight">[${safeJoin(data.best_guess)}]</div>
+                ${bestDesc}
+            </div>
             ${vsHTML}
-            <div class="split-box worst-box slide-in-right"><span style="color:#F43F5E">WORST CASE</span><div class="highlight">[${safeJoin(wcGuess)}]</div>
-            ${worstDesc}</div>`;
+            <div class="split-box worst-box slide-in-right">
+                <span style="color:#F43F5E">WORST CASE</span>
+                <div class="highlight">[${safeJoin(wcGuess)}]</div>
+                ${worstDesc}
+            </div>`;
     } else if (evalData.top_guesses && evalData.top_guesses.length >= 2) {
         const best = evalData.top_guesses[0], worst = evalData.top_guesses[evalData.top_guesses.length-1];
         container.innerHTML = `<div class="split-box best-box slide-in-left"><span style="color:#10B981">BEST FREQ</span><div class="highlight">[${safeJoin(best.guess)}]</div><div>가중치: ${best.score.toFixed(2)}</div></div>
