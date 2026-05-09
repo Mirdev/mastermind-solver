@@ -25,8 +25,8 @@ class MastermindLUTEngine(MastermindEngine):
             print("[System] 최초 1회 자동 구축을 시작합니다. 잠시만 기다려주세요...")
             generate_lut_4_digits()
         
-        self.lut_matrix = np.load(self.lut_file_path, mmap_mode='r') # 서버에선 이거 사용
-        # self.lut_matrix = np.load(self.lut_file_path) # 메모리 통채 적재
+        # self.lut_matrix = np.load(self.lut_file_path, mmap_mode='r') # 서버에선 이거 사용
+        self.lut_matrix = np.load(self.lut_file_path) # 메모리 통채 적재
 
     def get_feedback(self, secret, guess):
         if len(secret) != 4 or len(guess) != 4:

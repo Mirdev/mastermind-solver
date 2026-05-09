@@ -11,7 +11,7 @@ import requests
 
 from src.game_engine import MastermindEngine
 from src.lut_engine import MastermindLUTEngine
-from src.solvers.entropy_solver import EntropySolver
+# from src.solvers.entropy_solver import EntropySolver
 from src.solvers.heuristic_solver import HeuristicSolver
 from src.solvers.fast_entropy_solver import FastEntropySolver
 from src.solvers.minimax_solver import MinimaxSolver
