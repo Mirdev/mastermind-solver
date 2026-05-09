@@ -14,10 +14,13 @@ class FastEntropySolver:
     """
     _candidates_cache = {}
     
-    def __init__(self, engine, observer_callback=None):
+    def __init__(self, engine, observer_callback=None, is_benchmark=False):
         self.engine = engine
         self.observer_callback = observer_callback
+        self.is_benchmark = is_benchmark
         self.digits = engine.digits
+
+        self.log_file = None
         
         base_digits = '0123456789'
         if not self.engine.allow_leading_zero:
@@ -25,17 +28,20 @@ class FastEntropySolver:
         else:
             self.start_digits = base_digits
             
-        self.candidates = self._generate_all_candidates()
+        # [수정된 부분] 전체 추측 공간(G)과 정답 후보군(S)을 명확히 분리하여 저장
+        self.all_guesses = self._generate_all_candidates()
+        self.candidates = self.all_guesses[:]
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(current_dir))
-        self.log_dir = os.path.join(project_root, "logs")
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
-            
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.log_file = os.path.join(self.log_dir, f"sim_log_{timestamp}.jsonl")
-        self._log_initial_state()
+        if not self.is_benchmark:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(os.path.dirname(current_dir))
+            self.log_dir = os.path.join(project_root, "logs")
+            if not os.path.exists(self.log_dir):
+                os.makedirs(self.log_dir)
+                
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.log_file = os.path.join(self.log_dir, f"sim_log_{timestamp}.jsonl")
+            self._log_initial_state()
 
     def _log_initial_state(self):
         total = len(self.candidates)
@@ -91,6 +97,9 @@ class FastEntropySolver:
         ]
 
     def _extract_dashboard_data(self, turn, best_guess, evaluation_list, status):
+        if self.is_benchmark or not self.log_file:
+            return {}
+            
         total = len(self.candidates)
         probs = [[0.0]*10 for _ in range(self.digits)]
         for cand in self.candidates:
@@ -172,6 +181,9 @@ class FastEntropySolver:
         best_guess = None
         eval_list = []
 
+        if len(self.candidates) == 1:
+            best_guess = self.candidates[0]
+
         # 1. 1턴 하드코딩 (수학적 상수 반환)
         if turn == 1:
             if self.engine.allow_duplicates:
@@ -183,7 +195,8 @@ class FastEntropySolver:
         # 2. 전수조사 연산 (리던던시가 완벽히 소거된 클린 코드)
         if best_guess is None:
             S_list = self.candidates 
-            full_guesses = getattr(self.engine, 'all_candidates', self.candidates)
+            # [수정된 부분] 엔진에 전체 후보군이 없더라도, 솔버가 자체 보존 중인 전체 공간(all_guesses)을 사용
+            full_guesses = getattr(self.engine, 'all_candidates', self._generate_all_candidates())
 
             # [핵심] 2턴일 경우 템플릿을 추출하여 탐색 공간(G)을 극단적으로 압축
             if turn == 2:

@@ -29,26 +29,28 @@ def do_attack(solver, turn, digits):
         fb_input = input(f"   피드백 입력 (예: 1 1 / 정답 {digits} 0 / 스킵 s): ").lower().strip()
         if fb_input == 's': return False
         
-        # 띄어쓰기를 기준으로 분리하여 처리
+        s, b = -1, -1
+        # 1. 띄어쓰기 입력 처리 (예: "1 1")
         parts = fb_input.split()
         if len(parts) == 2 and all(p.isdigit() for p in parts):
             s, b = int(parts[0]), int(parts[1])
-            if s + b <= digits:
-                if (s, b) == (digits, 0):
-        
-        if len(fb_input) == 2 and fb_input.isdigit():
+        # 2. 붙여쓰기 입력 처리 (예: "11")
+        elif len(fb_input) == 2 and fb_input.isdigit():
             s, b = int(fb_input[0]), int(fb_input[1])
-            if s + b <= digits:
-                if (s, b) == (digits, 0):
-                    print(f"\n🎉 승리! {turn}회 만에 정답을 맞혔습니다.")
-                    if hasattr(solver, 'log_game_over'):
-                        solver.log_game_over(turn, guess, "win")
-                    return True
-                solver.update_candidates(guess, (s, b))
-                if hasattr(solver, 'log_state_after_feedback'):
-                    solver.log_state_after_feedback(turn, guess)
-                return False
-        print(f"   [!] 잘못된 입력입니다. {digits}자리 이하의 숫자로 '11'처럼 입력하세요.")
+            
+        # 통합된 판정 로직
+        if s >= 0 and b >= 0 and (s + b) <= digits:
+            if (s, b) == (digits, 0):
+                print(f"\n🎉 승리! {turn}회 만에 정답을 맞혔습니다.")
+                if hasattr(solver, 'log_game_over'):
+                    solver.log_game_over(turn, guess, "win")
+                return True
+            solver.update_candidates(guess, (s, b))
+            if hasattr(solver, 'log_state_after_feedback'):
+                solver.log_state_after_feedback(turn, guess)
+            return False
+            
+        print(f"   [!] 잘못된 입력입니다. {digits}자리 이하의 숫자로 '1 1' 또는 '11'처럼 입력하세요.")
 
 def do_defense(engine, solver, my_secret, digits, turn):
     """상대방의 공격에 대해 피드백을 주는 함수"""
@@ -135,11 +137,19 @@ def run_calculator(use_dashboard=False):
             print("-" * 20)
             if do_attack(solver, turn, digits): return
 
+        # 타임라인 검증 1: 피드백 모순으로 인한 후보군 소멸 시 대시보드 정상 종료 처리
         if not solver.candidates:
             print("\n❌ 오류: 피드백 모순! 후보군이 소멸했습니다.")
+            if hasattr(solver, 'log_game_over'):
+                guess = solver.get_best_guess(turn-1) if turn > 1 else ()
+                solver.log_game_over(turn, guess, "lose")
             return
 
+    # 타임라인 검증 2: 9회 오버 시 대시보드 정상 종료 처리
     print(f"\n💀 [GAME OVER] 9회가 종료되었습니다!")
+    if hasattr(solver, 'log_game_over'):
+        guess = solver.get_best_guess(turn)
+        solver.log_game_over(turn, guess, "lose")
 
 if __name__ == "__main__":
     # argparse를 통한 명령줄 인자 파싱 처리

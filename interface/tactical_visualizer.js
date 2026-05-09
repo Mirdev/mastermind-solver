@@ -59,22 +59,18 @@ window.refreshLogList = async function() {
 
 const safeJoin = (v) => Array.isArray(v) ? v.join("") : (v || "-");
 
-// Entropy와 Minimax 포맷 완벽 호환 파서
+// Entropy와 Minimax 포맷 완벽 호환 파서 (평탄화 로직 제거 버전)
 function parseSplit(arr) {
     if (!arr || !Array.isArray(arr) || arr.length === 0) return {type: 'unknown', s:'-', b:'-', c:'-'};
     
     let target = arr;
-    // 배열 깊이 평탄화 (단일 노드 탐색)
-    if (Array.isArray(target) && Array.isArray(target[0])) {
-        target = target[0];
-    }
 
     // 1. Minimax 포맷: e.g. ["Worst-case", 15]
     if (typeof target[0] === 'string') {
         return { type: 'minimax', label: target[0], c: target[1] };
     }
 
-    // 2. Entropy 포맷: e.g. [[S, B], count]
+    // 2. Entropy / FastEntropy 포맷: e.g. [[S, B], count] -> [[1, 1], 25]
     if (Array.isArray(target[0]) && target.length >= 2) {
         return { type: 'entropy', s: target[0][0], b: target[0][1], c: target[1] };
     }

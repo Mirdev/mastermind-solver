@@ -11,14 +11,17 @@ class MinimaxSolver:
     """
     Donald Knuth의 Minimax 전략을 최우선으로 하는 솔버.
     가장 큰 후보군 덩어리(Worst-case)를 최소화(Minimize)하는 것을 1순위로,
-    동률 시 섀넌 엔트로피를 2순위로 사용하여 최적의 수를 결정합니다.
+    동률 시 섀넌 엔트로피를 2순위로, 후보군 소속 여부를 3순위로 사용하여 최적의 수를 결정합니다.
     """
     _candidates_cache = {}
     
-    def __init__(self, engine, observer_callback=None):
+    def __init__(self, engine, observer_callback=None, is_benchmark=False):
         self.engine = engine
         self.observer_callback = observer_callback
+        self.is_benchmark = is_benchmark
         self.digits = engine.digits
+
+        self.log_file = None
         
         base_digits = '0123456789'
         if not self.engine.allow_leading_zero:
@@ -28,15 +31,16 @@ class MinimaxSolver:
             
         self.candidates = self._generate_all_candidates()
 
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(current_dir))
-        self.log_dir = os.path.join(project_root, "logs")
-        if not os.path.exists(self.log_dir):
-            os.makedirs(self.log_dir)
-            
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.log_file = os.path.join(self.log_dir, f"sim_log_{timestamp}.jsonl")
-        self._log_initial_state()
+        if not self.is_benchmark:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(os.path.dirname(current_dir))
+            self.log_dir = os.path.join(project_root, "logs")
+            if not os.path.exists(self.log_dir):
+                os.makedirs(self.log_dir)
+                
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.log_file = os.path.join(self.log_dir, f"sim_log_{timestamp}.jsonl")
+            self._log_initial_state()
 
     def _log_initial_state(self):
         total = len(self.candidates)
@@ -92,6 +96,9 @@ class MinimaxSolver:
         ]
 
     def _extract_dashboard_data(self, turn, best_guess, evaluation_list, status):
+        if self.is_benchmark or not self.log_file:
+            return {}
+            
         total = len(self.candidates)
         probs = [[0.0]*10 for _ in range(self.digits)]
         for cand in self.candidates:
@@ -102,11 +109,10 @@ class MinimaxSolver:
         worst_split_comparison = {}
 
         if evaluation_list:
-            # evaluation_list는 (guess, worst_case, entropy) 형태이며 오름차순(최적->최악) 정렬되어 있음
+            # evaluation_list는 (guess, worst_case, entropy) 형태이며 오름차순 정렬되어 있음
             best_eval = evaluation_list[0]
             worst_eval = evaluation_list[-1]
 
-            # 피드백(스트라이크/볼) 문자열 대신, Minimax의 핵심인 worst_case 숫자 자체를 저장
             expected_splits = [["Worst-case", best_eval[1]]]
             worst_split_comparison = {
                 "guess": list(worst_eval[0]),
@@ -123,8 +129,8 @@ class MinimaxSolver:
             "dashboard_3_evaluation": {
                 "metric_name": "Knuth Minimax (Worst-case) + Entropy Tie-breaker",
                 "top_guesses": [{"guess": list(g), "score": w} for g, w, _ in evaluation_list],
-                "expected_splits": expected_splits,            # 페이로드에 병합
-                "worst_split_comparison": worst_split_comparison # 페이로드에 병합
+                "expected_splits": expected_splits,
+                "worst_split_comparison": worst_split_comparison
             }
         }
         
@@ -137,8 +143,6 @@ class MinimaxSolver:
         return self.get_best_guess(turn + 1)
 
     def _get_turn2_templates(self, first_guess, all_possible_guesses):
-        """1턴 추측을 기준으로 2턴의 대칭성 파괴 대표 템플릿 추출 (타입 안정성 및 중복 처리 강화)"""
-        # [수정] 들어온 값이 문자열이든 튜플이든 무조건 정수형(int) 집합으로 강제 변환
         used = set(int(d) for d in first_guess) 
         std_unused = [d for d in range(10) if d not in used]
         
@@ -151,7 +155,6 @@ class MinimaxSolver:
             for d in guess:
                 if d not in used:
                     if d not in mapping:
-                        # 미사용 숫자가 처음 등장할 때, 지정된 순서(std_unused)대로 등장하는지 검증
                         if d != std_unused[next_idx]:
                             is_canonical = False
                             break
@@ -167,6 +170,9 @@ class MinimaxSolver:
         best_guess = None
         eval_list = []
 
+        if len(self.candidates) == 1:
+            best_guess = self.candidates[0]
+
         # 1. 1턴 하드코딩 (수학적 상수 반환)
         if turn == 1:
             if self.engine.allow_duplicates:
@@ -175,17 +181,20 @@ class MinimaxSolver:
             else:
                 best_guess = tuple(int(d) for d in self.start_digits[:self.digits])
 
-        # 2. 전수조사 연산 (리던던시가 완벽히 소거된 클린 코드)
+        # 2. 전수조사 연산
         if best_guess is None:
             S_list = self.candidates 
-            full_guesses = getattr(self.engine, 'all_candidates', self.candidates)
+            
+            # [수정 사항 3 방어 로직] S_list가 비어있을 경우 (ZeroDivisionError 및 IndexError 방지)
+            if not S_list:
+                return None
 
-            # [핵심] 2턴일 경우 템플릿을 추출하여 탐색 공간(G)을 극단적으로 압축
+            full_guesses = getattr(self.engine, 'all_candidates', self._generate_all_candidates())
+
             if turn == 2:
                 if hasattr(self.engine, 'history') and self.engine.history:
                     first_guess = self.engine.history[0][0]
                 else:
-                    # [수정] 문자열이 아닌 명확한 정수형 튜플로 first_guess 생성
                     if self.engine.allow_duplicates:
                         pattern = [self.start_digits[i // 2] for i in range(self.digits)]
                         first_guess = tuple(int(d) for d in pattern)
@@ -195,6 +204,10 @@ class MinimaxSolver:
                 G_list = self._get_turn2_templates(first_guess, full_guesses)
             else:
                 G_list = full_guesses
+
+            # [수정 사항 3 방어 로직] 탐색 공간(G_list)이 비어있을 경우
+            if not G_list:
+                return None
 
             N, M = len(S_list), len(G_list)
 
@@ -213,18 +226,21 @@ class MinimaxSolver:
                 balls = np.minimum(H_S[:, None, :], H_G[None, :, :]).sum(axis=2) - strikes
                 grid = (strikes << 4) | balls
 
-            # --- [단일화된 평가 루프] 튜플 구조: (guess, entropy, worst_case) ---
+            # --- [단일화된 평가 루프] 튜플 구조: (guess, worst_case, entropy) ---
             for j in range(M):
                 _, counts = np.unique(grid[:, j], return_counts=True)
                 p = counts / N
                 entropy = -np.sum(p * np.log2(p))
                 worst_case = int(np.max(counts))
-                eval_list.append((G_list[j], float(entropy), worst_case))
+                # [수정 사항 1 적용] _extract_dashboard_data와 동일한 (guess, worst_case, entropy) 순서로 통일
+                eval_list.append((G_list[j], worst_case, float(entropy)))
 
             # --- [Minimax 정렬 전략] ---
-            # 1순위: 최악의 경우 최소화 (x[2], 오름차순)
-            # 2순위: 엔트로피 최대화 (-round(x[1], 6)을 통해 내림차순 효과)
-            eval_list.sort(key=lambda x: (x[2], -round(x[1], 6)))
+            # 1순위: 최악의 경우 최소화 (x[1], 오름차순)
+            # 2순위: 엔트로피 최대화 (-round(x[2], 6)을 통해 내림차순 효과)
+            # 3순위: [수정 사항 4 적용] 동률 시 남은 정답 후보군에 속한 경우 우선 (무한 루프 방지)
+            S_set = set(S_list)
+            eval_list.sort(key=lambda x: (x[1], -round(x[2], 6), x[0] not in S_set))
             best_guess = eval_list[0][0]
 
         # 대시보드 페이로드 전송
@@ -242,6 +258,11 @@ class MinimaxSolver:
         while True:
             turns += 1
             guess = self.get_best_guess(turns)
+            
+            # 방어 로직: 더 이상 추측할 수 없을 때 무한 루프 방지
+            if guess is None:
+                return turns
+                
             feedback = self.engine.get_feedback(secret, guess)
             
             if feedback == (self.engine.digits, 0):
