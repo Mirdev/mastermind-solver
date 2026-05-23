@@ -39,6 +39,7 @@ class GameConfig(BaseModel):
 class FeedbackInput(BaseModel):
     strike: int
     ball: int
+    actual_guess: Optional[str] = None
 
 class OpponentGuessInput(BaseModel):
     guess: str
@@ -172,7 +173,12 @@ def ai_attack_phase(session_id: str, feedback: FeedbackInput):
     session = get_session(session_id)
     solver = session["solver"]
     turn = session["turn"]
-    guess = session.get("current_guess")
+    
+    if feedback.actual_guess:
+        guess = tuple(int(d) for d in feedback.actual_guess)
+        session["current_guess"] = guess
+    else:
+        guess = session.get("current_guess")
     
     if not guess:
         raise HTTPException(status_code=400, detail="AI has not made a guess yet.")

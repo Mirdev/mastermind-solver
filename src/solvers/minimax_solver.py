@@ -14,28 +14,21 @@ class MinimaxSolver(BaseMastermindSolver):
 
         # 1턴 하드코딩
         if turn == 1:
-            if self.engine.allow_duplicates:
-                pattern = [self.start_digits[i // 2] for i in range(self.digits)]
-                best_guess = tuple(int(d) for d in pattern)
-            else:
-                best_guess = tuple(int(d) for d in self.start_digits[:self.digits])
+            best_guess = self.get_random_first_guess()
 
         # 2턴 이후 연산
         if best_guess is None:
             S_list = self.candidates 
             if not S_list: return None
-            
+                
             full_guesses = getattr(self.engine, 'all_candidates', self.all_guesses)
 
             if turn == 2:
-                if hasattr(self.engine, 'history') and self.engine.history:
-                    first_guess = self.engine.history[0][0]
+                if self.guess_history:
+                    first_guess = self.guess_history[0][0] # 사용자가 수정한 1턴 번호를 가져옴
                 else:
-                    if self.engine.allow_duplicates:
-                        pattern = [self.start_digits[i // 2] for i in range(self.digits)]
-                        first_guess = tuple(int(d) for d in pattern)
-                    else:
-                        first_guess = tuple(int(d) for d in self.start_digits[:self.digits])
+                    first_guess = tuple(int(d) for d in self.start_digits[:self.digits])
+                    
                 G_list = self._get_turn2_templates(first_guess, full_guesses)
             else:
                 G_list = full_guesses

@@ -10,10 +10,8 @@ class HeuristicSolver(BaseMastermindSolver):
 
         if len(self.candidates) == 1:
             best_guess = self.candidates[0]
-        elif self.engine.allow_duplicates == True and turn == 1:
-            best_guess = tuple((i % 10) for i in range(1, self.engine.digits + 1))
-        elif self.engine.allow_duplicates == True and turn == 2:
-            best_guess = tuple(((i + self.engine.digits) % 10) for i in range(1, self.engine.digits + 1))
+        elif turn == 1:
+            best_guess = self.get_random_first_guess()
         else:
             position_counts = [{} for _ in range(self.engine.digits)]
             for cand in self.candidates:
