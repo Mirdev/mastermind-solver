@@ -354,24 +354,50 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         }
         .btn-action:hover { background-color: rgba(0, 240, 255, 0.1); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
         .target-display { 
-            text-align: center; color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.5); padding: 20px; 
-            font-family: 'Orbitron'; font-weight: bold;
-            font-size: clamp(18px, 6vw, 32px); /* 최소 18px ~ 최대 32px 사이에서 유동적 조절 */
-            letter-spacing: clamp(4px, 2vw, 12px); /* 화면이 좁아지면 자간도 좁아짐 */
-            white-space: nowrap; /* 절대 줄바꿈 하지 않음 */
+            text-align: center; 
+            color: #00f0ff; 
+            border: 1px solid rgba(0, 240, 255, 0.5); 
+            padding: clamp(10px, 4cqw, 20px); 
+            font-family: 'Orbitron'; 
+            font-weight: bold;
+            min-width: 0; 
+            
+            font-size: clamp(18px, 8cqw, 32px); 
+            letter-spacing: clamp(4px, 3cqw, 12px); 
+            
+            white-space: nowrap; 
             overflow: hidden; 
+            text-overflow: ellipsis;
         }
         
-        input[type="text"], input[type="number"] { background: rgba(0, 0, 0, 0.5); color: #00f0ff; border: 1px solid #1f2937; padding: 12px; font-family: 'Orbitron', sans-serif; outline: none; transition: 0.3s; width: 100%; box-sizing: border-box; }
+        input[type="text"], input[type="number"] { 
+            background: rgba(0, 0, 0, 0.5); 
+            color: #00f0ff; 
+            border: 1px solid #1f2937; 
+            padding: 12px; 
+            font-family: 'Orbitron', sans-serif; 
+            outline: none; 
+            transition: 0.3s; 
+            width: 100%; 
+            box-sizing: border-box; 
+            min-width: 0; /* ★ 핵심: 부모 요소의 너비를 강제로 찢고 나가는 것 방지 */
+        }
         input[type="text"]:focus { border-color: #00f0ff; box-shadow: 0 0 15px rgba(0, 240, 255, 0.3); }
         
         .responsive-input {
-            width: 100%; box-sizing: border-box; text-align: center; 
+            width: 100%; 
+            min-width: 0; 
+            box-sizing: border-box; 
+            text-align: center; 
             font-family: 'Orbitron', monospace; 
-            font-size: clamp(16px, 5vw, 24px); 
-            letter-spacing: clamp(4px, 2vw, 12px); 
-            white-space: nowrap; /* 기존의 word-break를 없애고 한 줄로 강제 */
+            
+            /* vw(화면 전체 기준) -> cqw(패널 기준)으로 변경하여 안전하게 축소됨 */
+            font-size: clamp(14px, 6cqw, 24px); 
+            letter-spacing: clamp(2px, 2cqw, 10px); 
+            
+            white-space: nowrap; 
             overflow: hidden;
+            text-overflow: ellipsis; /* 극한으로 좁아지면 텍스트 끝을 ... 으로 처리 */
         }
 
         #secret-banner {
