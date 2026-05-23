@@ -9,7 +9,7 @@
 ## Key Features
 
 * **Multi-Tier Architecture**:
-    * **Minimax Solver** *(new)*: Donald Knuth의 알고리즘을 채택하여, 어떤 피드백(S/B)이 나오더라도 남는 후보군의 최대 개수(Worst-case)를 가장 작게 방어하는 안정성 1티어 솔버입니다. 동률 발생 시 섀넌 엔트로피를 타이 브레이커로 사용하여 효율을 극대화합니다.
+    * **Minimax Solver**: Donald Knuth의 알고리즘을 채택하여, 어떤 피드백(S/B)이 나오더라도 남는 후보군의 최대 개수(Worst-case)를 가장 작게 방어하는 안정성 1티어 솔버입니다. 동률 발생 시 섀넌 엔트로피를 타이 브레이커로 사용하여 효율을 극대화합니다.
     * **FastEntropySolver**: 순수 파이썬 루프를 배제하고 NumPy 3차원 브로드캐스팅 및 행렬 교차 연산을 적용하여, 대규모 시뮬레이션에서 압도적인 속도를 자랑하는 벡터라이제이션 솔버입니다.
     * **Entropy Solver**: Shannon Entropy 기반의 표준 솔버. 이론적 최적해를 지향하며 최소 턴 수를 보장합니다.
     * **Heuristic Solver**: 위치별 빈도 분석(Naive Bayesian) 기반으로 연산 비용이 매우 낮아 실시간 처리에 적합합니다.
@@ -28,6 +28,7 @@
 * **D3.js Dashboard**: 간단한 streamlit 대시보드에서 화려한 애니메이션이 적용되는 D3.js 대시보드 기능 제공
 * **Tactical Command OS v2.0 (Micro-Frontend Architecture)** *(new)*: 
     * **FastAPI Backend**: Uvicorn 기반의 비동기 REST API를 구축하여 코어 엔진의 연산과 프론트엔드 시각화를 완벽히 분리(Decoupling).
+    * **Interactive Custom Opening**: 1턴 진입 시 AI가 산출한 무작위 최적 패턴(abcd/aabb)을 제공하되, 사용자가 전략적으로 직접 1턴 타격 코드를 덮어쓸 수 있는 실시간 개입 로직 구현.
     * **Full-Duplex State Machine**: 'AI 선공/후공' 및 '자리수 동적 변경'에 따라 공격 턴과 방어 턴 패널이 교차 전환되는 무결성 상태 머신을 적용.
     * **VOD History Replay**: 백엔드의 UUID 기반 세션 격리와 브라우저의 `localStorage`를 연동하여, 사용자가 본인의 과거 시뮬레이션 기록만 필터링하여 실시간으로 복기할 수 있는 VOD 시스템을 제공.
 
@@ -301,8 +302,8 @@
 
 실용적인 성능 향상을 위해 다음과 같은 로직을 반영하였습니다.
 
-1. **Heuristic '1234' Strategy**: 중복 허용 시 정보량이 적은 패턴(예: 0000)을 피하기 위해 첫 턴을 '1234'로 고정하여 초기 후보군 소거 영역을 확보합니다.
-2. **Entropy/Minimax 2-Turn Seed**: 연산량과 턴 수의 Trade-off를 고려하여, 연산 부하가 큰 초반 2턴은 고정 시드를 사용하고 이후 전수조사에 진입합니다.
+1. **Dynamic Optimal Opening**: 초반 턴의 하드코딩된 고정 시드(예: 1234) 전략을 폐기하고, 룰(중복 여부, 0시작 여부)에 맞춰 수학적 최적 정보량을 보장하는 패턴(abcd 또는 aabb) 내에서 매번 무작위 난수를 생성하여 오프닝의 예측 불가능성을 확보했습니다.
+2. **Object-Oriented History Centralization**: 하위 솔버들이 개별적으로 턴을 추적하던 구조를 개선하여, `BaseMastermindSolver`가 1턴 패턴 생성 및 사용자의 개입(Custom Guess)을 포함한 전체 턴 히스토리를 중앙 통제하도록 아키텍처를 리팩토링했습니다.
 3. **Strict Candidate Integrity**: 휴리스틱 연산 시 반드시 남은 후보군 내에서 최적해를 선택하도록 설계하여 논리적 모순 및 무한 루프를 방지합니다.
 4. **Input Validation Loop**: 인터랙티브 환경에서 사용자의 피드백 오류(S/B 합계 오류 등)를 실시간으로 검증합니다.
 5. **Data Decoupling**: 솔버의 핵심 연산 로직과 CLI 렌더링 로직을 완벽히 분리하여 연산 병목현상을 방지합니다.
@@ -422,6 +423,8 @@ python simulations/self_play.py [-d]
 │   ├── lut_engine.py             # O(1) 가속 LUT 캐시 엔진 (4자리 전용)
 │   ├── lut_generator.py          # 초기 1억 개 데이터 세팅 스크립트
 │   └── solvers/                  # Entropy, FastEntropy, Heuristic, Minimax 구현체
+│       ├── base_solver.py        # 턴 히스토리 및 오프닝 생성 중앙 통제 추상 클래스
+│       └── ...                   # Entropy, FastEntropy, Heuristic, Minimax 구현체
 ├── data/                         # 자동 생성된 .npy 캐시 파일 저장소 (gitignore)
 ├── interface/                    # CLI, GUI 및 D3.js 기반 대시보드
 │   ├── command_center.html       # Command OS 프론트엔드 UI
