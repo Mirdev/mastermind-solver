@@ -296,7 +296,19 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         @keyframes slideRight { 0% { transform: translateX(30px); opacity: 0; filter: blur(2px); } 100% { transform: translateX(0); opacity: 1; filter: blur(0); } }
         @keyframes pulseVS { 0% { transform: scale(1); text-shadow: none; } 50% { transform: scale(1.2); text-shadow: 0 0 10px #F43F5E; color: #F43F5E; } 100% { transform: scale(1); text-shadow: none; } }
 
-        #control-panel { flex: 1.1; padding: 20px 25px; background-color: rgba(10, 14, 23, 0.95); display: flex; flex-direction: column; overflow-y: auto; position: relative; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); height: 100dvh; transition: background-color 0.5s ease; }
+        #control-panel { 
+            flex: 1.1; 
+            padding: clamp(10px, 3vw, 20px) clamp(10px, 3vw, 25px); /* 화면이 좁아지면 내부 여백도 자동으로 줄어듦 */
+            background-color: rgba(10, 14, 23, 0.95); 
+            display: flex; 
+            flex-direction: column; 
+            overflow-y: auto; 
+            position: relative; 
+            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.8); 
+            height: 100dvh; 
+            transition: background-color 0.5s ease; 
+            container-type: inline-size; /* 핵심: 이 패널의 가로 길이를 기준으로 내부 폰트 크기가 반응하도록 설정 */
+        }
         
         /* 타이틀 스타일 수정 (Flex 레이아웃에 맞게 교정) */
         h2.panel-title { color: #00f0ff; text-transform: uppercase; letter-spacing: 4px; margin: 0; padding: 0; font-family: 'Orbitron', sans-serif; border: none; }
@@ -305,10 +317,41 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
         .label-title { color: #60a5fa; font-weight: bold; margin-bottom: 8px; font-size: 12px; }
         .chip-group { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; } .chip-group input[type="radio"] { display: none; }
-        .chip-label { flex: 1; text-align: center; padding: 10px 5px; background: rgba(30, 58, 138, 0.1); color: #4b5563; border: 1px solid #1f2937; border-radius: 2px; cursor: pointer; font-size: 13px; font-weight: bold; white-space: nowrap; transition: opacity 0.2s; }
+        .chip-label { 
+            flex: 1; 
+            text-align: center; 
+            padding: clamp(6px, 2cqw, 10px) clamp(2px, 1cqw, 5px); 
+            background: rgba(30, 58, 138, 0.1); 
+            color: #4b5563; 
+            border: 1px solid #1f2937; 
+            border-radius: 2px; 
+            cursor: pointer; 
+            font-size: clamp(9px, 3.5cqw, 13px); /* 기본 13px, 패널이 좁아지면 9px까지 자연스럽게 축소 */
+            font-weight: bold; 
+            white-space: normal; /* 공간이 극한으로 좁아지면 글자를 두 줄로 배치하여 뚫고 나가는 것 방지 */
+            word-break: keep-all; 
+            line-height: 1.2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s; 
+        }
         .chip-label:hover { border-color: #3b82f6; color: #93c5fd; }
         input[name^="opt_"]:checked + .chip-label, input[name="strike"]:checked + .chip-label, input[name="ball"]:checked + .chip-label { background: rgba(0, 240, 255, 0.15); color: #00f0ff; border-color: #00f0ff; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
-        .btn-action { white-space: nowrap; background-color: transparent; color: #00f0ff; border: 1px solid #00f0ff; padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; font-family: 'Orbitron'; }
+        .btn-action { 
+            white-space: nowrap; 
+            background-color: transparent; 
+            color: #00f0ff; 
+            border: 1px solid #00f0ff; 
+            padding: clamp(10px, 3cqw, 15px); 
+            font-size: clamp(10px, 4.5cqw, 16px); /* 기본 16px, 공간 부족 시 10px까지 폰트 축소 */
+            font-weight: bold; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            font-family: 'Orbitron'; 
+            overflow: hidden;
+            text-overflow: ellipsis; /* 만약 최소 크기(10px)로도 모자라면 글자 끝을 ...으로 안전하게 처리 */
+        }
         .btn-action:hover { background-color: rgba(0, 240, 255, 0.1); box-shadow: 0 0 15px rgba(0, 240, 255, 0.4); }
         .target-display { 
             text-align: center; color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.5); padding: 20px; 
@@ -556,9 +599,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <!-- [A] 공격 페이즈 1: 추측 숫자 확인 화면 -->
         <div id="step-attack-1" class="step-container">
             <div style="text-align: center; color: #60a5fa; font-family: 'Orbitron';">> MY ATTACK TURN <span id="display-turn-1" style="color: #fff; font-weight: bold; font-size: 20px;">1</span> <</div>
-            <div style="text-align: center; color: #94A3B8; font-size: 12px; margin-top: -15px; margin-bottom: 5px;">상대방에게 아래 추천 숫자를 공격하십시오.</div>
             
-            <div class="target-display pulse-target" id="ai-target-guess-1">_ _ _ _</div>
+            <div id="attack-guide-text" style="text-align: center; color: #94A3B8; font-size: 12px; margin-top: -15px; margin-bottom: 5px;">상대방에게 공격할 숫자를 입력하십시오.</div>
+            
+            <input type="text" id="custom_attack_guess" class="responsive-input pulse-target" style="margin-top: 10px; background: rgba(0,240,255,0.05); color: #00f0ff; font-weight: bold; text-align: center;" maxlength="5">
+            
+            <div id="attack-tip-text" style="text-align: center; color: #64748B; font-size: 11px; margin-top: 10px; margin-bottom: 5px; line-height: 1.4; word-break: keep-all;"></div>
             
             <button class="btn-action pulse-btn-cyan" style="margin-top: 20px; width: 100%;" onclick="goToAttackFeedback()">[ NEXT ]</button>
         </div>
@@ -626,6 +672,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         var isAtkFirst = true;
         var localTurn = 1;
         var nextAiGuess = [];
+        var userActualGuess = ""; // 사용자가 실제로 사용한 공격 번호 저장용
 
         document.addEventListener('DOMContentLoaded', function() {
             const historyPanel = document.getElementById('history-panel');
@@ -754,7 +801,31 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         function showAttackPhase() {
             document.getElementById('control-panel').style.backgroundColor = 'rgba(10, 14, 23, 0.95)';
             document.getElementById('display-turn-1').innerText = localTurn;
-            document.getElementById('ai-target-guess-1').innerText = nextAiGuess.join(' ');
+            
+            // AI 추천 숫자를 input 창에 기본값으로 세팅 (사용자가 원하면 지우고 수정 가능)
+            var inputEl = document.getElementById('custom_attack_guess');
+            inputEl.value = nextAiGuess.join('');
+            
+            // 새로 생성한 텍스트 및 팁 엘리먼트 가져오기
+            var guideEl = document.getElementById('attack-guide-text');
+            var tipEl = document.getElementById('attack-tip-text');
+            
+            // 턴 수에 따른 설명문 및 팁 노출 분기 처리
+            if (localTurn === 1) {
+                inputEl.readOnly = false;
+                inputEl.style.borderStyle = "dashed";
+                
+                // 1턴일 때 문구 세팅
+                if (guideEl) guideEl.innerText = "공격할 숫자를 직접 입력하거나,\nAI의 추천수를 그대로 공격에 사용하십시오.";
+                if (tipEl) tipEl.innerHTML = "[Tips: <b>비중복</b>에서는 1234 처럼 <b>모두 다른 숫자</b>,<br><b>중복허용</b>에서는 0011처럼 <b>두 개씩 같은 숫자</b>가<br>가장 효율적인 공격 패턴입니다]";
+            } else {
+                inputEl.readOnly = true;
+                inputEl.style.borderStyle = "solid";
+                
+                // 2턴 이상일 때 문구 세팅 (괄호 제거 및 팁 숨김)
+                if (guideEl) guideEl.innerText = "연산이 완료되었습니다. 아래 숫자를 상대방에게 제시하십시오.\n(전술 통제 중 - 수정 불가)";
+                if (tipEl) tipEl.innerText = "";
+            }
             
             switchStep('step-attack-1'); 
             showTurnNotification("사용자님의 공격 차례입니다", "#38BDF8");
@@ -762,6 +833,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
         // [B] 공격 페이즈 2: 피드백 입력 (중복정보 배제)
         function goToAttackFeedback() {
+            var guessInput = document.getElementById('custom_attack_guess').value.trim();
+            var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
+            
+            // 사용자가 수정한 값이 형식에 맞는지 검증
+            if (guessInput.length !== digits || !/^\d+$/.test(guessInput)) {
+                alert(`공격 숫자는 정확히 ${digits}자리의 숫자로 입력해야 합니다.`);
+                return;
+            }
+            
+            userActualGuess = guessInput; // 검증 통과 시 실제 사용 번호로 확정
+            
             document.getElementById('display-turn-2').innerText = localTurn;
             document.getElementById('s0').checked = true; document.getElementById('b0').checked = true;
             switchStep('step-attack-2');
@@ -915,10 +997,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             var maxDigits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
             if (s + b > maxDigits) { alert(`S와 B의 합이 자릿수(${maxDigits})를 초과할 수 없습니다.`); return; }
             try {
-                var res = await fetch(`${window.API_BASE}/game/${currentSessionId}/attack`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ strike: s, ball: b }) });
+                // 사용자가 입력/수정한 1턴 번호(actual_guess)를 백엔드로 함께 전송
+                var payload = { strike: s, ball: b, actual_guess: userActualGuess };
+                
+                var res = await fetch(`${window.API_BASE}/game/${currentSessionId}/attack`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
                 var data = await res.json();
+                
                 if (typeof window.refreshLogList === "function") window.refreshLogList();
                 if (typeof window.renderTacticalDisplay === "function") window.renderTacticalDisplay(currentLogFile);
+                
                 if (data.state === "error") { alert(`[시스템 오류]\n${data.message}`); return; } 
                 else if (data.state === "game_over") {
                     var isWin = data.result === "win";
