@@ -92,6 +92,9 @@ def start_game(config: GameConfig):
         }
         with open(log_path, "w", encoding="utf-8") as f:
             f.write(json.dumps(init_log) + "\n")
+
+    if config.my_secret and len(config.my_secret) != config.digits:
+        config.my_secret = None
             
     secret = tuple(int(d) for d in config.my_secret) if config.my_secret else engine.generate_secret()
 
