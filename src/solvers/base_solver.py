@@ -1,6 +1,7 @@
 # src/solvers/base_solver.py
 import os
 import json
+import random
 import numpy as np
 from datetime import datetime
 from itertools import permutations, product
@@ -18,6 +19,7 @@ class BaseMastermindSolver(ABC):
         self.is_benchmark = is_benchmark
         self.digits = engine.digits
         self.log_file = None
+        self.guess_history = []
         
         base_digits = '0123456789'
         if not self.engine.allow_leading_zero:
@@ -83,7 +85,25 @@ class BaseMastermindSolver(ABC):
         BaseMastermindSolver._candidates_cache[cache_key] = all_cands
         return all_cands[:]
 
+    def get_random_first_guess(self):
+        """모든 솔버가 공통으로 사용할 1턴 무작위 최적 패턴 생성"""
+        base_pool = list(range(10))
+        if not self.engine.allow_leading_zero:
+            first_digit = random.choice(range(1, 10))
+            base_pool.remove(first_digit)
+            rest_digits = random.sample(base_pool, self.digits - 1)
+            rand_pattern = [first_digit] + rest_digits
+        else:
+            rand_pattern = random.sample(base_pool, self.digits)
+
+        if self.engine.allow_duplicates:
+            return tuple(int(rand_pattern[i // 2]) for i in range(self.digits))
+        else:
+            return tuple(int(d) for d in rand_pattern[:self.digits])
+
     def update_candidates(self, guess, feedback):
+        self.guess_history.append((guess, feedback))
+        
         self.candidates = [
             c for c in self.candidates 
             if self.engine.get_feedback(c, guess) == feedback
