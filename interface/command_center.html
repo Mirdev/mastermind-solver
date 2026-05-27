@@ -617,7 +617,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                     <input type="radio" name="opt_atk" id="atk_ai" value="ai" checked><label class="chip-label" for="atk_ai">ATTACK FIRST</label>
                     <input type="radio" name="opt_atk" id="atk_me" value="me"><label class="chip-label" for="atk_me">DEFENSE FIRST</label>
                 </div>
-                <div style="margin-top: 15px;"><div class="label-title">> MY SECRET KEY</div><input type="text" id="my_secret" class="responsive-input" placeholder="[ _ _ _ _ ]" maxlength="4"></div>
+            </div>
+            
+            <div style="margin-top: 15px; border-top: 1px dashed #374151; padding-top: 15px;">
+                <div class="label-title">> MY SECRET KEY (미입력 시 무작위)</div>
+                <input type="text" id="my_secret" class="responsive-input" placeholder="[ _ _ _ _ ]" maxlength="4">
             </div>
             <button class="btn-action pulse-btn-cyan" style="margin-top: 20px; width: 100%;" onclick="initializeEngine()">[ INITIALIZE SEQUENCE ]</button>
         </div>
@@ -953,22 +957,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             try {
                 currentMode = document.querySelector('input[name="opt_mode"]:checked').value;
                 isAtkFirst = document.querySelector('input[name="opt_atk"]:checked').value === "ai";
+                var mySecret = document.getElementById('my_secret').value.trim();
                 var digits = parseInt(document.querySelector('input[name="opt_digits"]:checked').value);
                 localTurn = 1;
 
-                // [핵심 수정] 자가 대결 모드일 경우, 숨겨져 있던 비밀키 데이터를 강제로 무시("")합니다.
-                var mySecret = currentMode === "interactive" ? document.getElementById('my_secret').value.trim() : "";
-
-                if (currentMode === "interactive") {
-                    if (mySecret.length > 0 && mySecret.length !== digits) {
-                        alert(`비밀키는 반드시 ${digits}자리로 입력해야 합니다.`);
+                // [공통 검증] 모드와 상관없이 사용자가 값을 입력했을 때만 자릿수와 포맷 체크
+                if (mySecret.length > 0) {
+                    if (mySecret.length !== digits) {
+                        alert(`타겟 비밀키는 현재 설정된 자릿수(${digits}자리)와 일치해야 합니다.`);
                         return;
                     }
-                    if (!isAtkFirst && mySecret.length !== digits) {
-                        alert(`수비가 선공인 경우, 방어에 사용될 ${digits}자리의 비밀키를 반드시 입력해야 합니다.`);
-                        return;
-                    }
-                    if (mySecret.length > 0 && !/^\d+$/.test(mySecret)) {
+                    if (!/^\d+$/.test(mySecret)) {
                         alert(`비밀키는 숫자만 입력 가능합니다.`);
                         return;
                     }
