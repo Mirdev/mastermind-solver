@@ -228,28 +228,30 @@ def user_defense_phase(session_id: str, opp: OpponentGuessInput):
     session = get_session(session_id)
     engine = session["engine"]
     config = session["config"]
-    
-    if not config.my_secret:
-        raise HTTPException(status_code=400, detail="No secret set.")
-        
+
     opp_guess = tuple(int(d) for d in opp.guess)
-    my_secret = tuple(int(d) for d in config.my_secret)
+
+    # 직접 입력값과 무작위 생성값 모두 여기 저장되어 있음
+    my_secret = session["secret"]
+
     s, b = engine.get_feedback(opp_guess, my_secret)
-    
+
     if s == config.digits:
         final_log = {
-            "turn": session["turn"], "best_guess": opp_guess, "status": "lose",
+            "turn": session["turn"],
+            "best_guess": opp_guess,
+            "status": "lose",
             "solver_name": session["solver"].__class__.__name__,
             "dashboard_2_trend": {"remaining_count": 0}
         }
         with open(session["solver"].log_file, "a", encoding="utf-8") as f:
             f.write(json.dumps(final_log) + "\n")
-            
+
     return {
         "state": "defense_turn",
         "opponent_guess": opp.guess,
         "feedback": {"strike": s, "ball": b}
-    }
+        }
 
 @app.get("/logs/{file_name}")
 def get_session_log(file_name: str):
